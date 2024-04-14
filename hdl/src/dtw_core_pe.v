@@ -42,6 +42,11 @@ module dtw_core_pe #(
 );
 
 /* ===============================
+ * local parameters
+ * =============================== */
+localparam MAX_BUF_VALUE = {(width){1'b1}};
+
+/* ===============================
  * registes/wires
  * =============================== */
 // Sample distances
@@ -55,7 +60,9 @@ wire [width-1:0] min3 = (min2 > NW)? NW : min2;
 /* ===============================
  * asynchronous logic
  * =============================== */
-assign DTWc = cost + min3;
+// Ensure buffer saturates when the cost accumulation has a value greater than 16 bits.
+wire [width-1:0] cost_buf_space = MAX_BUF_VALUE - min3;
+assign DTWc = (cost < cost_buf_space) ? (cost + min3) : MAX_BUF_VALUE;
 
 /* ===============================
  * synchronous logic
