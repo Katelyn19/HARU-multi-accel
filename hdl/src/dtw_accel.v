@@ -39,10 +39,12 @@ module dtw_accel #(
     parameter DATA_WIDTH            = 32,
 
     parameter AXIS_DATA_WIDTH       = 32,
+    parameter AXIS_DEST_WIDTH       = 4,
+    parameter AXIS_ID_WIDTH        = 8,
     parameter AXIS_KEEP_WIDTH       = (AXIS_DATA_WIDTH / 8),
     parameter AXIS_DATA_USER_WIDTH  = 0,
     parameter FIFO_DATA_WIDTH       = AXIS_DATA_WIDTH,
-    parameter FIFO_DEPTH            = 4,
+    
     parameter INVERT_AXI_RESET      = 1,
     parameter INVERT_AXIS_RESET     = 1
 )(
@@ -75,25 +77,51 @@ module dtw_accel #(
     output wire [1:0]                       S_AXI_rresp,
     output wire [DATA_WIDTH - 1: 0]         S_AXI_rdata,
 
-    // AXI Stream
+    // // AXI Stream
 
-    // Input AXI Stream
+    // // Input AXI Stream
+    // input  wire                             SRC_AXIS_clk,
+    // input  wire                             SRC_AXIS_rst,
+    // input  wire                             SRC_AXIS_tuser,
+    // input  wire                             SRC_AXIS_tvalid,
+    // output wire                             SRC_AXIS_tready,
+    // input  wire                             SRC_AXIS_tlast,
+    // input  wire [AXIS_DATA_WIDTH - 1:0]     SRC_AXIS_tdata,
+
+    // // Output AXI Stream
+    // input  wire                             SINK_AXIS_clk,
+    // input  wire                             SINK_AXIS_rst,
+    // output wire                             SINK_AXIS_tuser,
+    // output wire                             SINK_AXIS_tvalid,
+    // input  wire                             SINK_AXIS_tready,
+    // output wire                             SINK_AXIS_tlast,
+    // output wire [AXIS_DATA_WIDTH - 1:0]     SINK_AXIS_tdata,
+
+    // AXI Multi-channel Stream
+
+    // Input AXI Stream (from the Master mm2s port of the MCDMA)
     input  wire                             SRC_AXIS_clk,
     input  wire                             SRC_AXIS_rst,
-    input  wire                             SRC_AXIS_tuser,
-    input  wire                             SRC_AXIS_tvalid,
-    output wire                             SRC_AXIS_tready,
-    input  wire                             SRC_AXIS_tlast,
     input  wire [AXIS_DATA_WIDTH - 1:0]     SRC_AXIS_tdata,
+    input  wire [AXIS_DEST_WIDTH - 1:0]     SRC_AXIS_tdest,
+    input  wire [AXIS_ID_WIDTH - 1:0]       SRC_AXIS_tid,
+    input  wire [AXIS_KEEP_WIDTH - 1:0]     SRC_AXIS_tkeep,
+    input  wire                             SRC_AXIS_tlast,
+    input  wire                             SRC_AXIS_tuser,
+    output wire                             SRC_AXIS_tready,
+    input  wire                             SRC_AXIS_tvalid,
 
-    // Output AXI Stream
+    // Output AXI Stream (to the Slave s2mm port of the MCDMA)
     input  wire                             SINK_AXIS_clk,
     input  wire                             SINK_AXIS_rst,
-    output wire                             SINK_AXIS_tuser,
-    output wire                             SINK_AXIS_tvalid,
-    input  wire                             SINK_AXIS_tready,
+    output wire [AXIS_DATA_WIDTH - 1:0]     SINK_AXIS_tdata,
+    output wire [AXIS_DEST_WIDTH - 1:0]     SINK_AXIS_tdest,
+    output wire [AXIS_ID_WIDTH - 1:0]       SINK_AXIS_tid,
+    output wire [AXIS_KEEP_WIDTH - 1:0]     SINK_AXIS_tkeep,
     output wire                             SINK_AXIS_tlast,
-    output wire [AXIS_DATA_WIDTH - 1:0]     SINK_AXIS_tdata
+    input  wire                             SINK_AXIS_tready,
+    output wire                             SINK_AXIS_tuser,
+    output wire                             SINK_AXIS_tvalid
 );
 
 /* ===============================
