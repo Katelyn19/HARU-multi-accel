@@ -143,3 +143,4 @@ RUgOUT
 *.zip
 output/
 test_ru_out/
+.hdl_checker/
