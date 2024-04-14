@@ -43,7 +43,9 @@ module dtw_accel #(
     parameter AXIS_ID_WIDTH        = 8,
     parameter AXIS_KEEP_WIDTH       = (AXIS_DATA_WIDTH / 8),
     parameter AXIS_DATA_USER_WIDTH  = 0,
+
     parameter FIFO_DATA_WIDTH       = AXIS_DATA_WIDTH,
+    parameter FIFO_DEPTH            = 4,
     
     parameter INVERT_AXI_RESET      = 1,
     parameter INVERT_AXIS_RESET     = 1
