@@ -155,8 +155,8 @@ int32_t haru_multi_accel_load_reference(haru_t *haru, int32_t *ref, uint32_t siz
     while (size_left > 0) {
         uint32_t transfer_size = size_left < HARU_AXIS_BATCH_MAX_SIZE ? size_left : HARU_AXIS_BATCH_MAX_SIZE;
         // Copy reference to buffer
-        memset((void *) haru->axi_dma.v_src_addr, 0, 0xffff);
-        memcpy((void *) haru->axi_dma.v_src_addr, (void *) curr_ref, transfer_size * sizeof(int32_t));
+        memset((void *) haru->axi_mcdma.v_buffer_src_addr, 0, 0xffff);
+        memcpy((void *) haru->axi_mcdma.v_buffer_src_addr, (void *) curr_ref, transfer_size * sizeof(int32_t));
 
         // Set up channel and buffer descriptor
         axi_mcdma_mm2s_bd_init(&haru->axi_mcdma, 0, (transfer_size) * sizeof(int32_t), 0);
@@ -178,4 +178,15 @@ void haru_process_query(haru_t *haru, int32_t *query, uint32_t size, search_resu
     dtw_accel_set_mode(&haru->dtw_accel, DTW_ACCEL_MODE_QUERY);
     axi_dma_haru_query_transfer(&haru->axi_dma, size * sizeof(int32_t), sizeof(search_result_t));
     memcpy(results, haru->axi_dma.v_dst_addr, sizeof(search_result_t));
+}
+
+void haru_multi_accel_process_query(haru_t *haru, int32_t *query, uint32_t size, search_result_t *results) {
+    // Copy query into src buffer
+    memset((void *)haru->axi_mcdma.v_buffer_src_addr, 0, 0xffff);
+    memcpy(haru->axi_mcdma.v_buffer_src_addr, query, size * sizeof(int32_t));
+    memset(haru->axi_mcdma.v_buffer_dst_addr, 0, 0xffff);
+
+    dtw_accel_set_mode(&haru->dtw_accel, DTW_ACCEL_MODE_QUERY);
+    axi_mcdma_haru_query_transfer(&haru->axi_mcdma, 0, size * sizeof(int32_t), sizeof(search_result_t));
+    memcpy(results, haru->axi_mcdma.v_buffer_dst_addr, sizeof(search_result_t));
 }

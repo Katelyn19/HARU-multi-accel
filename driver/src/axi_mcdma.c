@@ -122,7 +122,7 @@ void axi_mcdma_channel_init(axi_mcdma_t *device, int channel_idx, uint32_t src_a
 	This buffer descriptor sets up a transfer with "transfer_size" number of bytes from the channel's source buffer.
 */
 void axi_mcdma_mm2s_bd_init(axi_mcdma_t *device, int channel_idx, uint32_t transfer_size, uint32_t bd_addr_offset) {
-	HARU_LOG("Configuring bd chain for channel %d", channel_idx);
+	HARU_LOG("Configuring mm2s bd chain for channel %d", channel_idx);
 	axi_mcdma_channel_t *channel = device->channels[channel_idx];
 
 	if (transfer_size > channel->buf_size) {
@@ -167,11 +167,45 @@ void axi_mcdma_mm2s_bd_init(axi_mcdma_t *device, int channel_idx, uint32_t trans
 
 }
 
-void axi_mcdma_mm2s_transfer(axi_mcdma_t *device) {
-	// Clearup
-	mcdma_reset(device);
-	mcdma_mm2s_stop(device);
+void axi_mcdma_s2mm_bd_init(axi_mcdma_t *device, int channel_idx, uint32_t transfer_size, uint32_t bd_addr_offset) {
+	HARU_LOG("Configuring s2mm bd chain for channel %d", channel_idx);
+	axi_mcdma_channel_t *channel = device->channels[channel_idx];
 
+	if (transfer_size > channel->buf_size) {
+		HARU_ERROR("Transfer size (0x%08x) greater than buffer size (0x%08x)", transfer_size, channel->buf_size);
+	}
+
+	axi_mcdma_bd_t *s2mm_bd = channel->s2mm_bd_chain;
+	if (s2mm_bd == NULL) {
+		s2mm_bd = (axi_mcdma_bd_t *) malloc(sizeof( axi_mcdma_bd_t ));
+		HARU_MALLOC_CHK(s2mm_bd);
+		channel->s2mm_bd_chain = s2mm_bd;
+	}
+
+	channel->s2mm_curr_bd_addr = device->p_s2mm_bd_addr + bd_addr_offset;
+	channel->s2mm_tail_bd_addr = device->p_s2mm_bd_addr + bd_addr_offset;
+	s2mm_bd->p_bd_addr = device->p_s2mm_bd_addr + bd_addr_offset;
+	s2mm_bd->v_bd_addr = device->v_s2mm_bd_addr + bd_addr_offset;
+
+	s2mm_bd->next_mcdma_bd = NULL;
+	s2mm_bd->next_bd_addr = channel->s2mm_tail_bd_addr;
+	s2mm_bd->buffer_addr = channel->p_buf_dst_addr;
+	s2mm_bd->buffer_length = transfer_size;
+
+	HARU_LOG("%s", "s2mm_bd fields:");
+	HARU_LOG("> next_bd_addr: 0x%08x", s2mm_bd->next_bd_addr);
+	HARU_LOG("> buffer_addr: 0x%08x", s2mm_bd->buffer_addr);
+	HARU_LOG("> buffer_length: 0x%08x", s2mm_bd->buffer_length);
+
+	_reg_set(s2mm_bd->v_bd_addr, AXI_MCDMA_S2MM_BD_NEXT_DESC_LSB, s2mm_bd->next_bd_addr);
+	_reg_set(s2mm_bd->v_bd_addr, AXI_MCDMA_S2MM_BD_BUF_ADDR_LSB, s2mm_bd->buffer_addr);
+	uint32_t control = (uint32_t) (s2mm_bd->sof << 31) | (uint32_t) (s2mm_bd->eof << 30) | s2mm_bd->buffer_length;
+	_reg_set(s2mm_bd->v_bd_addr, AXI_MCDMA_S2MM_BD_CONTROL, control);
+	_reg_set(s2mm_bd->v_bd_addr, AXI_MCDMA_S2MM_BD_STATUS, 0x00000000);
+
+}
+
+void axi_mcdma_mm2s_transfer(axi_mcdma_t *device) {
 	// Config and start
 	_reg_set(device->v_baseaddr, AXI_MCDMA_MM2S_CCR, AXI_MCDMA_MM2S_RS);
 	HARU_LOG("Start mm2s @ 0x%03x", AXI_MCDMA_MM2S_CCR);
@@ -191,6 +225,26 @@ void axi_mcdma_mm2s_transfer(axi_mcdma_t *device) {
 	
 }
 
+void axi_mcdma_s2mm_transfer(axi_mcdma_t *device) {
+	// Config and start
+	_reg_set(device->v_baseaddr, AXI_MCDMA_S2MM_CCR, AXI_MCDMA_MM2S_RS);
+	HARU_LOG("Start s2mm @ 0x%03x", AXI_MCDMA_MM2S_CCR);
+
+	_reg_set(device->v_baseaddr, AXI_MCDMA_S2MM_CHEN, device->channel_en);
+	HARU_LOG("reg@0x%03x : 0x%08x (channel enable)", AXI_MCDMA_S2MM_CHEN, device->channel_en);
+
+	// Program s2mm current and tail descriptor
+	for (int i = 0; i < NUM_CHANNELS; i++) {
+		if (device->channel_en & (1 << i)) {
+			config_and_start_mcdma_s2mm_channel(device, i);
+		}
+	}
+
+	mcdma_s2mm_busy_wait(device);
+	HARU_LOG("%s", "s2mm transfer done.");
+	
+}
+
 void config_and_start_mcdma_mm2s_channel(axi_mcdma_t *device, int channel_idx) {
 	// Set current descriptor
 	_reg_set(device->v_baseaddr, (AXI_MCDMA_MM2S_CHCURDESC_LSB + AXI_MCDMA_CH_OFFSET*channel_idx), device->channels[channel_idx]->mm2s_curr_bd_addr);
@@ -205,11 +259,77 @@ void config_and_start_mcdma_mm2s_channel(axi_mcdma_t *device, int channel_idx) {
 	HARU_LOG("Programmed mm2s tail bd 0x%03x : 0x%08x", AXI_MCDMA_MM2S_CHTAILDESC_LSB + AXI_MCDMA_CH_OFFSET*channel_idx, device->channels[channel_idx]->mm2s_tail_bd_addr);
 }
 
+void config_and_start_mcdma_s2mm_channel(axi_mcdma_t *device, int channel_idx) {
+	// Set current descriptor
+	_reg_set(device->v_baseaddr, (AXI_MCDMA_S2MM_CHCURDESC_LSB + AXI_MCDMA_CH_OFFSET*channel_idx), device->channels[channel_idx]->s2mm_curr_bd_addr);
+	// Channel fetch bit
+	_reg_set(device->v_baseaddr, (AXI_MCDMA_S2MM_CHCR + AXI_MCDMA_CH_OFFSET*channel_idx), AXI_MCDMA_S2MM_CHRS);
+
+	HARU_LOG("Writing s2mm configuration to addr 0x%08x", device->p_baseaddr + AXI_MCDMA_CH_OFFSET*channel_idx);
+	HARU_LOG("reg@0x%03x : 0x%08x (current bd)", AXI_MCDMA_S2MM_CHCURDESC_LSB + AXI_MCDMA_CH_OFFSET*channel_idx, device->channels[channel_idx]->s2mm_curr_bd_addr);
+	HARU_LOG("reg@0x%03x : 0x%08x (channel %d fetch)", AXI_MCDMA_S2MM_CHCR + AXI_MCDMA_CH_OFFSET*channel_idx, AXI_MCDMA_S2MM_CHRS, channel_idx);
+
+	_reg_set(device->v_baseaddr, (AXI_MCDMA_S2MM_CHTAILDESC_LSB + AXI_MCDMA_CH_OFFSET*channel_idx), device->channels[channel_idx]->s2mm_tail_bd_addr);
+	HARU_LOG("Programmed s2mm tail bd 0x%03x : 0x%08x", AXI_MCDMA_S2MM_CHTAILDESC_LSB + AXI_MCDMA_CH_OFFSET*channel_idx, device->channels[channel_idx]->s2mm_tail_bd_addr);
+}
+
+void axi_mcdma_haru_query_transfer(axi_mcdma_t *device, int channel_idx, uint32_t src_len, uint32_t dst_len) {
+	// Clearup
+	mcdma_reset(device);
+	mcdma_mm2s_stop(device);
+	mcdma_s2mm_stop(device);
+
+	// s2mm config and start
+	axi_mcdma_s2mm_bd_init(device, 0, (dst_len) * sizeof(int32_t), 0);
+
+	_reg_set(device->v_baseaddr, AXI_MCDMA_S2MM_CCR, AXI_MCDMA_S2MM_RS);
+	HARU_LOG("Start S2MM @ 0x%03x", AXI_MCDMA_S2MM_CCR);
+
+	_reg_set(device->v_baseaddr, AXI_MCDMA_S2MM_CHEN, device->channel_en);
+	HARU_LOG("reg@0x%03x : 0x%08x (channel enable)", AXI_MCDMA_S2MM_CHEN, device->channel_en);
+
+	// Program s2mm current and tail descriptor
+	for (int i = 0; i < NUM_CHANNELS; i++) {
+		if (device->channel_en & (1 << i)) {
+			config_and_start_mcdma_s2mm_channel(device, i);
+		}
+	}
+
+	axi_mcdma_mm2s_bd_init(device, 0, (src_len) * sizeof(int32_t), 0);
+
+	// mm2s Config and start
+	_reg_set(device->v_baseaddr, AXI_MCDMA_MM2S_CCR, AXI_MCDMA_MM2S_RS);
+	HARU_LOG("Start mm2s @ 0x%03x", AXI_MCDMA_MM2S_CCR);
+
+	_reg_set(device->v_baseaddr, AXI_MCDMA_MM2S_CHEN, device->channel_en);
+	HARU_LOG("reg@0x%03x : 0x%08x (channel enable)", AXI_MCDMA_MM2S_CHEN, device->channel_en);
+
+	// Program mm2s current and tail descriptor
+	for (int i = 0; i < NUM_CHANNELS; i++) {
+		if (device->channel_en & (1 << i)) {
+			config_and_start_mcdma_mm2s_channel(device, i);
+		}
+	}
+
+	mcdma_mm2s_busy_wait(device);
+	HARU_LOG("%s", "mm2s query transfer done.");
+	mcdma_s2mm_busy_wait(device);
+	HARU_LOG("%s", "s2mm query transfer done.");
+}
+
 void mcdma_mm2s_busy_wait(axi_mcdma_t *device) {
 	// Busy wait
 	uint32_t mm2s_sr = _reg_get(device->v_baseaddr, AXI_MCDMA_MM2S_CSR);
 	while (!(mm2s_sr & AXI_MCDMA_MM2S_IDLE)) {
 		mm2s_sr = _reg_get(device->v_baseaddr, AXI_MCDMA_MM2S_CSR);
+	}
+}
+
+void mcdma_s2mm_busy_wait(axi_mcdma_t *device) {
+	// Busy wait
+	uint32_t s2mm_sr = _reg_get(device->v_baseaddr, AXI_MCDMA_S2MM_CSR);
+	while (!(s2mm_sr & AXI_MCDMA_S2MM_IDLE)) {
+		s2mm_sr = _reg_get(device->v_baseaddr, AXI_MCDMA_S2MM_CSR);
 	}
 }
 
@@ -234,4 +354,9 @@ void mcdma_reset(axi_mcdma_t *device) {
 void mcdma_mm2s_stop(axi_mcdma_t *device) {
 	HARU_LOG("%s", "Stop mm2s MCDMA operations.");
 	_reg_set(device->v_baseaddr, AXI_MCDMA_MM2S_CCR, AXI_MCDMA_MM2S_RS);
+}
+
+void mcdma_s2mm_stop(axi_mcdma_t *device) {
+	HARU_LOG("%s", "Stop s2mm MCDMA operations.");
+	_reg_set(device->v_baseaddr, AXI_MCDMA_S2MM_CCR, AXI_MCDMA_S2MM_RS);
 }

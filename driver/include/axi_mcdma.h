@@ -19,13 +19,21 @@ typedef struct axi_mcdma_channel axi_mcdma_channel_t;
 typedef struct axi_mcdma_bd axi_mcdma_bd_t;
 
 int32_t axi_mcdma_init(axi_mcdma_t *device, uint32_t baseaddr, uint32_t src_addr, uint32_t dst_addr, uint32_t mm2s_bd_addr, uint32_t s2mm_bd_addr, uint32_t size);
+void axi_mcdma_haru_query_transfer(axi_mcdma_t *device, int channel_idx, uint32_t src_len, uint32_t dst_len);
+
 void axi_mcdma_channel_init(axi_mcdma_t *device, int channel_idx, uint32_t src_addr_offset, uint32_t dst_addr_offset, int buf_size);
 void axi_mcdma_mm2s_bd_init(axi_mcdma_t *device, int channel_idx, uint32_t transfer_size, uint32_t bd_addr_offset);
+void axi_mcdma_s2mm_bd_init(axi_mcdma_t *device, int channel_idx, uint32_t transfer_size, uint32_t bd_addr_offset);
 void axi_mcdma_mm2s_transfer(axi_mcdma_t *device);
+void axi_mcdma_s2mm_transfer(axi_mcdma_t *device);
+
 void config_and_start_mcdma_mm2s_channel(axi_mcdma_t *device, int channel_idx);
+void config_and_start_mcdma_s2mm_channel(axi_mcdma_t *device, int channel_idx);
 void mcdma_mm2s_busy_wait(axi_mcdma_t *device);
-void mcdma_reset(axi_mcdma_t *device);
+void mcdma_s2mm_busy_wait(axi_mcdma_t *device);
 void mcdma_mm2s_stop(axi_mcdma_t *device);
+void mcdma_s2mm_stop(axi_mcdma_t *device);
+void mcdma_reset(axi_mcdma_t *device);
 
 /*
     AXI MCDMA Device Config
