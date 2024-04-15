@@ -27,6 +27,7 @@ SOFTWARE. */
 #define HARU_H
 
 #include "axi_dma.h"
+#include "axi_mcdma.h"
 #include "dtw_accel.h"
 
 #include <stdint.h>
@@ -49,6 +50,7 @@ SOFTWARE. */
 typedef struct {
     dtw_accel_t dtw_accel;
     axi_dma_t axi_dma;
+    axi_mcdma_t axi_mcdma;
 } haru_t;
 
 typedef struct {

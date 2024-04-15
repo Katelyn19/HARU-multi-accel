@@ -13,7 +13,7 @@ This header file defines the register addresses and values to control the MCDMA.
     AXI MCDMA Configuration
 */
 
-typedef struct mcdma_device mcdma_device_t;
+typedef struct axi_mcdma axi_mcdma_t;
 typedef struct mcdma_channel mcdma_channel_t;
 typedef struct mcdma_bd mcdma_bd_t;
 
@@ -24,7 +24,7 @@ typedef struct mcdma_bd mcdma_bd_t;
 #define NUM_CHANNELS 5
 
 /* mcdma device */
-struct mcdma_device {
+struct axi_mcdma {
     // device info
     uint32_t p_baseaddr;
     uint32_t *v_baseaddr;
