@@ -23,8 +23,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE. */
 
-#ifndef MISC_H
-#define MISC_H
+#ifndef HARU_MISC_H
+#define HARU_MISC_H
 
 #include <stdio.h>
 #include <stdint.h>
@@ -43,6 +43,24 @@ SOFTWARE. */
     fprintf(stderr, "INFO: %s:%d: ", __FILE__, __LINE__); \
     fprintf(stderr, "%s", msg);
 
+#define HARU_LOG_PREFIX "[HARU_LOG] %s: " /* TODO function before debug */
+#define HARU_ERROR_PREFIX "[%s::HARU_ERROR]\033[1;31m "
+#define HARU_LOG(msg, ...) { \
+    fprintf(stderr, HARU_LOG_PREFIX msg \
+            " At %s:%d\n", \
+            __func__, __VA_ARGS__, __FILE__, __LINE__ - 1); \
+}
+#define HARU_ERROR(msg, ...) { \
+    fprintf(stderr, HARU_ERROR_PREFIX msg \
+            " At %s:%d\n", \
+            __func__, __VA_ARGS__, __FILE__, __LINE__ - 1); \
+}
 // uint32_t haru_errno = 0;
+
+#define HARU_MALLOC_CHK(ret) { \
+    if ((ret) == NULL) { \
+        HARU_ERROR("%s", "Malloc Failed") \
+    } \
+}
 
 #endif // MISC_H
