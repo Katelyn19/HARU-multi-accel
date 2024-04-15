@@ -14,14 +14,14 @@ This header file defines the register addresses and values to control the MCDMA.
 */
 
 typedef struct axi_mcdma axi_mcdma_t;
-typedef struct mcdma_channel mcdma_channel_t;
-typedef struct mcdma_bd mcdma_bd_t;
+typedef struct axi_mcdma_channel axi_mcdma_channel_t;
+typedef struct axi_mcdma_bd axi_mcdma_bd_t;
 
 
 /*
     AXI MCDMA Device Config
 */
-#define NUM_CHANNELS 5
+#define NUM_CHANNELS 4
 
 /* mcdma device */
 struct axi_mcdma {
@@ -36,14 +36,20 @@ struct axi_mcdma {
     uint32_t p_buffer_dst_addr;
     uint32_t *v_buffer_dst_addr;
 
+    // bd addresses
+    uint32_t p_mm2s_bd_addr;
+    uint32_t *v_mm2s_bd_addr;
+    uint32_t p_s2mm_bd_addr;
+    uint32_t *v_s2mm_bd_addr;
+
     // channels
-    int num_channels;
-    mcdma_channel_t *channels[NUM_CHANNELS];
+    uint32_t channel_en;
+    axi_mcdma_channel_t *channels[NUM_CHANNELS];
 
 };
 
 /* mcdma channel */
-struct mcdma_channel {
+struct axi_mcdma_channel {
     int channel_id;
     uint32_t p_buf_src_addr;
     uint32_t *v_buf_src_addr;
@@ -56,33 +62,28 @@ struct mcdma_channel {
     uint32_t s2mm_tail_bd_addr; // only counts bits 31:6
 
     // buffer descriptor chain 
-    mcdma_bd_t *mm2s_bd_chain;
-    mcdma_bd_t *s2mm_bd_chain;
+    axi_mcdma_bd_t *mm2s_bd_chain;
+    axi_mcdma_bd_t *s2mm_bd_chain;
 };
 
 /* mcdma buffer descriptor */
-struct mcdma_bd {
+struct axi_mcdma_bd {
     uint32_t p_bd_addr;
     uint32_t *v_bd_addr;
-    mcdma_bd_t *next_mcdma_bd;
+    axi_mcdma_bd_t *next_mcdma_bd;
 
     uint32_t next_bd_addr; // only counts bits 31:6
     uint32_t buffer_addr;
     uint32_t buffer_length; // only counts bits 0:25
     int sof;
     int eof;
-    uint32_t tid;
+    uint8_t tid;
+    uint8_t tdest;
 };
 
 /*
     AXI MCDMA Buffer Address Space
 */
-#define AXI_MCDMA_BUF_ADDR_BASE                     0xa0000000
-#define AXI_MCDMA_BUF_SIZE                          0xffff
-#define AXI_MCDMA_BUF_SRC_ADDR                      0x10000000
-#define AXI_MCDMA_BUF_DST_ADDR                      0x20000000
-#define AXI_MCDMA_MM2S_BD_CHAIN_ADDR                0x01000000
-#define AXI_MCDMA_S2MM_BD_CHAIN_ADDR                0x02000000
 #define AXI_MCDMA_BD_OFFSET                         0x1000
 #define AXI_MCDMA_CH_OFFSET                         0x040
 
@@ -221,4 +222,5 @@ struct mcdma_bd {
 #define AXI_MCDMA_S2MM_BD_DMA_COMPLETED             0x1 << 31
 #define AXI_MCDMA_S2MM_BD_DMA_RXSOF                 0x1 << 27
 #define AXI_MCDMA_S2MM_BD_DMA_RXEOF                 0x1 << 28
+
 #endif

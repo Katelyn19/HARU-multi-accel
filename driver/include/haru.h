@@ -32,16 +32,18 @@ SOFTWARE. */
 
 #include <stdint.h>
 
-#define HARU_AXI_DMA_ADDR_BASE      0xa0010000
-#define HARU_AXI_DMA_SIZE           0xffff
-#define HARU_DTW_ACCEL_ADDR_BASE    0xa0000000
-#define HARU_DTW_ACCEL_SIZE         0xffff
+#define HARU_AXI_DMA_ADDR_BASE                              0xa0010000
+#define HARU_AXI_DMA_SIZE                                   0xffff
+#define HARU_DTW_ACCEL_ADDR_BASE                            0xa0000000
+#define HARU_DTW_ACCEL_SIZE                                 0xffff
 
 #define HARU_AXI_DMA_INIT_ERROR     0x01
 #define HARU_DTW_ACCEL_INIT_ERROR   0x02
 
-#define HARU_AXI_SRC_ADDR           0x10000000
-#define HARU_AXI_DST_ADDR           0x20000000
+#define HARU_AXI_SRC_ADDR                                   0x10000000
+#define HARU_AXI_DST_ADDR                                   0x20000000
+#define HARU_AXI_MM2S_BD_CHAIN_ADDR                         0x01000000
+#define HARU_AXI_S2MM_BD_CHAIN_ADDR                         0x02000000
 
 #define HARU_AXI_BUFFER_SIZE        0xffff
 

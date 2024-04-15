@@ -77,6 +77,9 @@ SOFTWARE. */
 #define DTW_ACCEL_CORE_WADDR_LSB            0x00
 #define DTW_ACCEL_CORE_RADDR_LSB            0x15
 
+// MCDMA TDEST
+#define DTW_ACCEL_REF_TDEST                 0
+
 typedef struct {
     uint32_t *v_baseaddr;    // Memory mapped virtual base address
     uint32_t p_baseaddr;    // Physical base address

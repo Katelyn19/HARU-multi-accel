@@ -61,6 +61,34 @@ int32_t haru_init(haru_t *haru) {
     return 0;
 }
 
+void haru_multi_accel_init(haru_t *haru) {
+    uint32_t ret;
+    // Initialise axi_mcdma
+    ret = axi_mcdma_init(&haru->axi_mcdma, HARU_AXI_DMA_ADDR_BASE, HARU_AXI_SRC_ADDR, HARU_AXI_DST_ADDR, HARU_AXI_MM2S_BD_CHAIN_ADDR, HARU_AXI_S2MM_BD_CHAIN_ADDR, HARU_AXI_DMA_SIZE);
+    if (ret != 0) {
+        return -1;
+    }
+
+    // Initialize dtw_accel
+    ret = dtw_accel_init(&haru->dtw_accel, HARU_DTW_ACCEL_ADDR_BASE, HARU_DTW_ACCEL_SIZE);
+    if (ret != 0) {
+        return -1;
+    }
+
+    haru_check_key(haru);
+    uint32_t version = haru_get_version(haru);
+    // printf("HARU version: %x\n", version);
+    // printf("DTW_ACCEL busy: %x\n", dtw_accel_busy(&haru->dtw_accel));
+    // printf("DTW_ACCEL ref_load_done: %x\n", dtw_accel_ref_load_done(&haru->dtw_accel));
+    // printf("DTW_ACCEL src_fifo_empty: %x\n", dtw_accel_src_fifo_empty(&haru->dtw_accel));
+    // printf("DTW_ACCEL src_fifo_full: %x\n", dtw_accel_src_fifo_full(&haru->dtw_accel));
+    // printf("DTW_ACCEL sink_fifo_empty: %x\n", dtw_accel_sink_fifo_empty(&haru->dtw_accel));
+    // printf("DTW_ACCEL sink_fifo_full: %x\n", dtw_accel_sink_fifo_full(&haru->dtw_accel));
+    // printf("DTW_ACCEL state: %x\n", dtw_accel_state(&haru->dtw_accel));
+    // printf("DTW_ACCEL addrw_ref: %x\n", dtw_accel_addrw_ref(&haru->dtw_accel));
+    return 0;
+}
+
 void haru_release(haru_t *haru) {
     axi_dma_release(&haru->axi_dma);
     dtw_accel_release(&haru->dtw_accel);
@@ -104,6 +132,35 @@ int32_t haru_load_reference(haru_t *haru, int32_t *ref, uint32_t size) {
         memset((void *) haru->axi_dma.v_src_addr, 0, 0xffff);
         memcpy((void *) haru->axi_dma.v_src_addr, (void *) curr_ref, transfer_size * sizeof(int32_t));
         axi_dma_mm2s_transfer(&haru->axi_dma, (transfer_size) * sizeof(int32_t));
+        
+        size_left -= transfer_size;
+        curr_ref += transfer_size;
+    }
+    // fprintf(stderr, "ref_addr: %d\n", dtw_accel_addrw_ref(&haru->dtw_accel));
+    return dtw_accel_ref_load_done(&haru->dtw_accel);
+}
+
+int32_t haru_multi_accel_load_reference(haru_t *haru, int32_t *ref, uint32_t size) {
+
+    // Reset dtw_accel
+    dtw_accel_reset(&haru->dtw_accel);
+    dtw_accel_set_mode(&haru->dtw_accel, DTW_ACCEL_MODE_REF_LOAD);
+    dtw_accel_set_ref_len(&haru->dtw_accel, size);
+    dtw_accel_run(&haru->dtw_accel);
+
+    // Transfer reference with one channel
+    uint32_t size_left = size;
+    int32_t *curr_ref = ref;
+    axi_mcdma_channel_init(&haru->axi_mcdma, 0, 0, 0, 0xffff);
+    while (size_left > 0) {
+        uint32_t transfer_size = size_left < HARU_AXIS_BATCH_MAX_SIZE ? size_left : HARU_AXIS_BATCH_MAX_SIZE;
+        // Copy reference to buffer
+        memset((void *) haru->axi_dma.v_src_addr, 0, 0xffff);
+        memcpy((void *) haru->axi_dma.v_src_addr, (void *) curr_ref, transfer_size * sizeof(int32_t));
+
+        // Set up channel and buffer descriptor
+        axi_mcdma_mm2s_bd_init(&haru->axi_mcdma, 0, transfer_size, 0);
+        axi_mcdma_mm2s_transfer(&haru->axi_dma, (transfer_size) * sizeof(int32_t));
         
         size_left -= transfer_size;
         curr_ref += transfer_size;
