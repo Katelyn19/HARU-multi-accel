@@ -31,9 +31,9 @@ SOFTWARE. */
 
 #include <stdint.h>
 
-#define HARU_AXI_DMA_ADDR_BASE      0xa0000000
+#define HARU_AXI_DMA_ADDR_BASE      0xa0010000
 #define HARU_AXI_DMA_SIZE           0xffff
-#define HARU_DTW_ACCEL_ADDR_BASE    0xa0010000
+#define HARU_DTW_ACCEL_ADDR_BASE    0xa0000000
 #define HARU_DTW_ACCEL_SIZE         0xffff
 
 #define HARU_AXI_DMA_INIT_ERROR     0x01
