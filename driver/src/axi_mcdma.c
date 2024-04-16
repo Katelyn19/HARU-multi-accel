@@ -207,9 +207,6 @@ void axi_mcdma_s2mm_bd_init(axi_mcdma_t *device, int channel_idx, uint32_t trans
 
 void axi_mcdma_mm2s_transfer(axi_mcdma_t *device) {
 	// Config and start
-	_reg_set(device->v_baseaddr, AXI_MCDMA_MM2S_CCR, AXI_MCDMA_MM2S_RS);
-	HARU_LOG("Start mm2s @ 0x%03x", AXI_MCDMA_MM2S_CCR);
-
 	_reg_set(device->v_baseaddr, AXI_MCDMA_MM2S_CHEN, device->channel_en);
 	HARU_LOG("reg@0x%03x : 0x%08x (channel enable)", AXI_MCDMA_MM2S_CHEN, device->channel_en);
 
@@ -227,9 +224,6 @@ void axi_mcdma_mm2s_transfer(axi_mcdma_t *device) {
 
 void axi_mcdma_s2mm_transfer(axi_mcdma_t *device) {
 	// Config and start
-	_reg_set(device->v_baseaddr, AXI_MCDMA_S2MM_CCR, AXI_MCDMA_MM2S_RS);
-	HARU_LOG("Start s2mm @ 0x%03x", AXI_MCDMA_MM2S_CCR);
-
 	_reg_set(device->v_baseaddr, AXI_MCDMA_S2MM_CHEN, device->channel_en);
 	HARU_LOG("reg@0x%03x : 0x%08x (channel enable)", AXI_MCDMA_S2MM_CHEN, device->channel_en);
 
@@ -255,6 +249,10 @@ void config_and_start_mcdma_mm2s_channel(axi_mcdma_t *device, int channel_idx) {
 	HARU_LOG("reg@0x%03x : 0x%08x (current bd)", AXI_MCDMA_MM2S_CHCURDESC_LSB + AXI_MCDMA_CH_OFFSET*channel_idx, device->channels[channel_idx]->mm2s_curr_bd_addr);
 	HARU_LOG("reg@0x%03x : 0x%08x (channel %d fetch)", AXI_MCDMA_MM2S_CHCR + AXI_MCDMA_CH_OFFSET*channel_idx, AXI_MCDMA_MM2S_CHRS, channel_idx);
 
+	// mm2s Config and start
+	_reg_set(device->v_baseaddr, AXI_MCDMA_MM2S_CCR, AXI_MCDMA_MM2S_RS);
+	HARU_LOG("Start mm2s @ 0x%03x", AXI_MCDMA_MM2S_CCR);
+
 	_reg_set(device->v_baseaddr, (AXI_MCDMA_MM2S_CHTAILDESC_LSB + AXI_MCDMA_CH_OFFSET*channel_idx), device->channels[channel_idx]->mm2s_tail_bd_addr);
 	HARU_LOG("Programmed mm2s tail bd 0x%03x : 0x%08x", AXI_MCDMA_MM2S_CHTAILDESC_LSB + AXI_MCDMA_CH_OFFSET*channel_idx, device->channels[channel_idx]->mm2s_tail_bd_addr);
 }
@@ -269,6 +267,9 @@ void config_and_start_mcdma_s2mm_channel(axi_mcdma_t *device, int channel_idx) {
 	HARU_LOG("reg@0x%03x : 0x%08x (current bd)", AXI_MCDMA_S2MM_CHCURDESC_LSB + AXI_MCDMA_CH_OFFSET*channel_idx, device->channels[channel_idx]->s2mm_curr_bd_addr);
 	HARU_LOG("reg@0x%03x : 0x%08x (channel %d fetch)", AXI_MCDMA_S2MM_CHCR + AXI_MCDMA_CH_OFFSET*channel_idx, AXI_MCDMA_S2MM_CHRS, channel_idx);
 
+	_reg_set(device->v_baseaddr, AXI_MCDMA_S2MM_CCR, AXI_MCDMA_S2MM_RS);
+	HARU_LOG("Start S2MM @ 0x%03x", AXI_MCDMA_S2MM_CCR);
+
 	_reg_set(device->v_baseaddr, (AXI_MCDMA_S2MM_CHTAILDESC_LSB + AXI_MCDMA_CH_OFFSET*channel_idx), device->channels[channel_idx]->s2mm_tail_bd_addr);
 	HARU_LOG("Programmed s2mm tail bd 0x%03x : 0x%08x", AXI_MCDMA_S2MM_CHTAILDESC_LSB + AXI_MCDMA_CH_OFFSET*channel_idx, device->channels[channel_idx]->s2mm_tail_bd_addr);
 }
@@ -282,9 +283,6 @@ void axi_mcdma_haru_query_transfer(axi_mcdma_t *device, int channel_idx, uint32_
 	// s2mm config and start
 	axi_mcdma_s2mm_bd_init(device, 0, (dst_len) * sizeof(int32_t), 0);
 
-	_reg_set(device->v_baseaddr, AXI_MCDMA_S2MM_CCR, AXI_MCDMA_S2MM_RS);
-	HARU_LOG("Start S2MM @ 0x%03x", AXI_MCDMA_S2MM_CCR);
-
 	_reg_set(device->v_baseaddr, AXI_MCDMA_S2MM_CHEN, device->channel_en);
 	HARU_LOG("reg@0x%03x : 0x%08x (channel enable)", AXI_MCDMA_S2MM_CHEN, device->channel_en);
 
@@ -296,10 +294,6 @@ void axi_mcdma_haru_query_transfer(axi_mcdma_t *device, int channel_idx, uint32_
 	}
 
 	axi_mcdma_mm2s_bd_init(device, 0, (src_len) * sizeof(int32_t), 0);
-
-	// mm2s Config and start
-	_reg_set(device->v_baseaddr, AXI_MCDMA_MM2S_CCR, AXI_MCDMA_MM2S_RS);
-	HARU_LOG("Start mm2s @ 0x%03x", AXI_MCDMA_MM2S_CCR);
 
 	_reg_set(device->v_baseaddr, AXI_MCDMA_MM2S_CHEN, device->channel_en);
 	HARU_LOG("reg@0x%03x : 0x%08x (channel enable)", AXI_MCDMA_MM2S_CHEN, device->channel_en);
@@ -322,6 +316,9 @@ void mcdma_mm2s_busy_wait(axi_mcdma_t *device) {
 	uint32_t mm2s_sr = _reg_get(device->v_baseaddr, AXI_MCDMA_MM2S_CSR);
 	while (!(mm2s_sr & AXI_MCDMA_MM2S_IDLE)) {
 		mm2s_sr = _reg_get(device->v_baseaddr, AXI_MCDMA_MM2S_CSR);
+		mm2s_common_status(device);
+		mm2s_channel_status(device);
+		mm2s_bd_status(device->channels[0]);
 	}
 }
 
@@ -359,4 +356,161 @@ void mcdma_mm2s_stop(axi_mcdma_t *device) {
 void mcdma_s2mm_stop(axi_mcdma_t *device) {
 	HARU_LOG("%s", "Stop s2mm MCDMA operations.");
 	_reg_set(device->v_baseaddr, AXI_MCDMA_S2MM_CCR, AXI_MCDMA_S2MM_RS);
+}
+
+
+void mm2s_common_status(axi_mcdma_t *device) {
+	uint32_t mm2s_common = _reg_get(device->v_baseaddr, AXI_MCDMA_MM2S_CSR);
+	// HARU_STATUS("mm2s common status @ 0x%08x = 0x%08x", device->p_baseaddr, mm2s_common);
+	if (mm2s_common & AXI_MCDMA_MM2S_HALTED) {
+		HARU_STATUS("%s", "mm2s_common: halted");
+	}
+	if (mm2s_common & AXI_MCDMA_MM2S_IDLE) {
+		HARU_STATUS("%s", "mm2s_common: idle");
+	}
+
+	uint32_t mm2s_ch_prog = _reg_get(device->v_baseaddr, AXI_MCDMA_MM2S_CHSER);
+	HARU_STATUS("mm2s_ch_prog: 0x%08x", mm2s_ch_prog);
+
+	uint32_t mm2s_error = _reg_get(device->v_baseaddr, AXI_MCDMA_MM2S_ERR);
+	// HARU_STATUS("mm2s error status = 0x%08x", mm2s_error);
+	if (mm2s_error & AXI_MCDMA_MM2S_SG_DEC_ERR) {
+		HARU_ERROR("%s", "mm2s_err: SGDecErr");
+	}
+	if (mm2s_error & AXI_MCDMA_MM2S_SG_INT_ERR) {
+		HARU_ERROR("%s", "mm2s_err: SGIntErr");
+	}
+	if (mm2s_error & AXI_MCDMA_MM2S_SG_SLV_ERR) {
+		HARU_ERROR("%s", "mm2s_err: SGSlvErr");
+	}
+	if (mm2s_error & AXI_MCDMA_MM2S_DMA_DEC_ERR) {
+		HARU_ERROR("%s", "mm2s_err:  DMA Dec Err ");
+	}
+	if (mm2s_error & AXI_MCDMA_MM2S_DMA_SLV_ERR) {
+		HARU_ERROR("%s", "mm2s_err: DMA SLv Err");
+	}
+	if (mm2s_error & AXI_MCDMA_MM2S_DMA_INTR_ERR) {
+		HARU_ERROR("%s", "mm2s_err: DMA Intr Err");
+	}
+}
+
+void s2mm_common_status(axi_mcdma_t *device) {
+	uint32_t s2mm_common = _reg_get(device->v_baseaddr, AXI_MCDMA_S2MM_CSR);
+	// HARU_STATUS("s2mm common status = 0x%08x", s2mm_common);
+	if (s2mm_common & AXI_MCDMA_S2MM_HALTED) {
+		HARU_STATUS("%s", "s2mm_common: halted");
+	}
+	if (s2mm_common & AXI_MCDMA_S2MM_IDLE) {
+		HARU_STATUS("%s", "s2mm_common: idle");
+	}
+
+	uint32_t s2mm_error = _reg_get(device->v_baseaddr, AXI_MCDMA_S2MM_ERR);
+	// HARU_STATUS("s2mm error status = 0x%08x", s2mm_error);
+	if (s2mm_error & AXI_MCDMA_S2MM_SG_DEC_ERR) {
+		HARU_ERROR("%s", "s2mm_err: SGDecErr");
+	}
+	if (s2mm_error & AXI_MCDMA_S2MM_SG_INT_ERR) {
+		HARU_ERROR("%s", "s2mm_err: SGIntErr");
+	}
+	if (s2mm_error & AXI_MCDMA_S2MM_SG_SLV_ERR) {
+		HARU_ERROR("%s", "s2mm_err: SGSlvErr");
+	}
+	if (s2mm_error & AXI_MCDMA_S2MM_DMA_DEC_ERR) {
+		HARU_ERROR("%s", "s2mm_err: DMA Dec Err ");
+	}
+	if (s2mm_error & AXI_MCDMA_S2MM_DMA_SLV_ERR) {
+		HARU_ERROR("%s", "s2mm_err: DMA SLv Err");
+	}
+	if (s2mm_error & AXI_MCDMA_S2MM_DMA_INTR_ERR) {
+		HARU_ERROR("%s", "s2mm_err: DMA Intr Err");
+	}
+
+	uint32_t s2mm_ch_prog = _reg_get(device->v_baseaddr, AXI_MCDMA_S2MM_CHSER);
+	HARU_STATUS("s2mm_ch_prog: 0x%08x", s2mm_ch_prog);
+}
+
+void mm2s_channel_status(axi_mcdma_t *device) {
+	for (int i = 0; i < NUM_CHANNELS; i ++) {
+		uint32_t ch_mm2s_status = _reg_get(device->v_baseaddr, (AXI_MCDMA_MM2S_CHSR + AXI_MCDMA_CH_OFFSET*i));
+		// HARU_STATUS("ch1_mm2s_status = 0x%08x", ch1_mm2s_status);
+		if (ch_mm2s_status & AXI_MCDMA_CH_IDLE) {
+			HARU_STATUS("ch%d_mm2s_status: Idle (Queue Empty) ", i);
+		}
+		if (ch_mm2s_status & AXI_MCDMA_CH_ERR_OTH_CH) {
+			HARU_ERROR("ch%d_mm2s_status: Err_on_other_ch_irq ", i);
+		}
+		if (ch_mm2s_status & AXI_MCDMA_CH_IOC_IRQ) {
+			HARU_STATUS("ch%d_mm2s_status: IOC_Irq", i);
+		}
+		if (ch_mm2s_status & AXI_MCDMA_CH_DLY_IRQ) {
+			HARU_STATUS("ch%d_mm2s_status: DlyIrq", i);
+		}
+		if (ch_mm2s_status & AXI_MCDMA_CH_ERR_IRQ) {
+			HARU_ERROR("ch%d_mm2s_status: Err Irq ", i);
+		}
+	}
+}
+
+void s2mm_channel_status(axi_mcdma_t *device) {
+	for (int i = 0; i < NUM_CHANNELS; i ++) {
+		uint32_t ch_s2mm_status = _reg_get(device->v_baseaddr, (AXI_MCDMA_S2MM_CHSR + AXI_MCDMA_CH_OFFSET*i));
+		// HARU_STATUS("ch1_s2mm_status = 0x%08x", ch1_mm2s_status);
+		if (ch_s2mm_status & AXI_MCDMA_CH_IDLE) {
+			HARU_STATUS("ch%d_s2mm_status: Idle (Queue Empty) ", i);
+		}
+		if (ch_s2mm_status & AXI_MCDMA_CH_ERR_OTH_CH) {
+			HARU_ERROR("ch%d_s2mm_status: Err_on_other_ch_irq ", i);
+		}
+		if (ch_s2mm_status & AXI_MCDMA_CH_IOC_IRQ) {
+			HARU_STATUS("ch%d_s2mm_status: IOC_Irq", i);
+		}
+		if (ch_s2mm_status & AXI_MCDMA_CH_DLY_IRQ) {
+			HARU_STATUS("ch%d_s2mm_status: DlyIrq", i);
+		}
+		if (ch_s2mm_status & AXI_MCDMA_CH_ERR_IRQ) {
+			HARU_ERROR("ch%d_s2mm_status: Err Irq ", i);
+		}
+	}
+}
+
+void mm2s_bd_status(axi_mcdma_channel_t *channel) {
+	uint32_t mm2s_bd_status = _reg_get(channel->mm2s_bd_chain->v_bd_addr, AXI_MCDMA_MM2S_BD_STATUS);
+	// HARU_STATUS("mm2s bd status = 0x%08x", mm2s_bd_status);
+	HARU_STATUS("ch%d_mm2s_bd_status: %d bytes transferred", channel->channel_id, mm2s_bd_status & AXI_MCDMA_MM2S_BD_SBYTE_MASK);
+	if (mm2s_bd_status & AXI_MCDMA_MM2S_BD_DMA_INT_ERR) {
+		HARU_ERROR("ch%d_mm2s_bd_status: DMA Int Err", channel->channel_id);
+	}
+	if (mm2s_bd_status & AXI_MCDMA_MM2S_BD_DMA_SLV_ERR) {
+		HARU_ERROR("ch%d_mm2s_bd_status: DMA Slave Err ", channel->channel_id);
+	}
+	if (mm2s_bd_status & AXI_MCDMA_MM2S_BD_DMA_DEC_ERR) {
+		HARU_ERROR("ch%d_mm2s_bd_status: DMA Dec Err", channel->channel_id);
+	}
+	if (mm2s_bd_status & AXI_MCDMA_MM2S_BD_DMA_COMPLETED) {
+		HARU_STATUS("ch%d_mm2s_bd_status: Completed", channel->channel_id);
+	}
+}
+
+void s2mm_bd_status(axi_mcdma_channel_t *channel) {
+	uint32_t s2mm_bd_status = _reg_get(channel->s2mm_bd_chain->v_bd_addr, AXI_MCDMA_S2MM_BD_STATUS);
+	// HARU_STATUS("s2mm bd status = 0x%08x", S2MM_bd_status);
+	HARU_STATUS("ch%d_s2mm_bd_status: %d bytes transferred", channel->channel_id, s2mm_bd_status & AXI_MCDMA_S2MM_BD_SBYTE_MASK);
+	if (s2mm_bd_status & AXI_MCDMA_S2MM_BD_DMA_INT_ERR) {
+		HARU_ERROR("ch%d_s2mm_bd_status: DMA Int Err", channel->channel_id);
+	}
+	if (s2mm_bd_status & AXI_MCDMA_S2MM_BD_DMA_SLV_ERR) {
+		HARU_ERROR("ch%d_s2mm_bd_status: DMA Slave Err ", channel->channel_id);
+	}
+	if (s2mm_bd_status & AXI_MCDMA_S2MM_BD_DMA_DEC_ERR) {
+		HARU_ERROR("ch%d_s2mm_bd_status: DMA Dec Err", channel->channel_id);
+	}
+	if (s2mm_bd_status & AXI_MCDMA_S2MM_BD_DMA_COMPLETED) {
+		HARU_STATUS("ch%d_s2mm_bd_status: Completed", channel->channel_id);
+	}
+	if (s2mm_bd_status & AXI_MCDMA_S2MM_BD_DMA_RXSOF) {
+		HARU_STATUS("ch%d_s2mm_bd_status: SOF", channel->channel_id);
+	}
+	if (s2mm_bd_status & AXI_MCDMA_S2MM_BD_DMA_RXEOF) {
+		HARU_STATUS("ch%d_s2mm_bd_status: EOF", channel->channel_id);
+	}
 }

@@ -45,6 +45,7 @@ SOFTWARE. */
 
 #define HARU_LOG_PREFIX "[HARU_LOG] %s: " /* TODO function before debug */
 #define HARU_ERROR_PREFIX "[%s::HARU_ERROR]\033[1;31m "
+#define HARU_STATUS_PREFIX "[HARU_STATUS]\033[1;36m "
 #define HARU_LOG(msg, ...) { \
     fprintf(stderr, HARU_LOG_PREFIX msg \
             " At %s:%d\n", \
@@ -57,6 +58,10 @@ SOFTWARE. */
 }
 // uint32_t haru_errno = 0;
 
+#define HARU_STATUS(msg, ...) { \
+    fprintf(stderr, HARU_STATUS_PREFIX msg "\n" \
+             ,__VA_ARGS__); \
+}
 #define HARU_MALLOC_CHK(ret) { \
     if ((ret) == NULL) { \
         HARU_ERROR("%s", "Malloc Failed") \

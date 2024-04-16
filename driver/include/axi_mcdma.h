@@ -35,6 +35,12 @@ void mcdma_mm2s_stop(axi_mcdma_t *device);
 void mcdma_s2mm_stop(axi_mcdma_t *device);
 void mcdma_reset(axi_mcdma_t *device);
 
+void mm2s_common_status(axi_mcdma_t *device);
+void mm2s_channel_status(axi_mcdma_t *device);
+void mm2s_bd_status(axi_mcdma_channel_t *channel);
+void s2mm_common_status(axi_mcdma_t *device);
+void s2mm_channel_status(axi_mcdma_t *device);
+void s2mm_bd_status(axi_mcdma_channel_t *channel);
 /*
     AXI MCDMA Device Config
 */
