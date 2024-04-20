@@ -43,23 +43,23 @@ SOFTWARE. */
     fprintf(stderr, "INFO: %s:%d: ", __FILE__, __LINE__); \
     fprintf(stderr, "%s", msg);
 
-#define HARU_LOG_PREFIX "[HARU_LOG] %s: " /* TODO function before debug */
-#define HARU_ERROR_PREFIX "[%s::HARU_ERROR]\033[1;31m "
-#define HARU_STATUS_PREFIX "[HARU_STATUS]\033[1;36m "
+#define HARU_LOG_PREFIX "\033[1;0m[HARU_LOG] %s: " /* TODO function before debug */
+#define HARU_ERROR_PREFIX "\033[1;0m[%s::HARU_ERROR]\033[1;31m "
+#define HARU_STATUS_PREFIX "\033[1;0m[HARU_STATUS]\033[1;36m "
 #define HARU_LOG(msg, ...) { \
     fprintf(stderr, HARU_LOG_PREFIX msg \
-            " At %s:%d\n", \
-            __func__, __VA_ARGS__, __FILE__, __LINE__ - 1); \
+            "\n", \
+            __func__, __VA_ARGS__); \
 }
 #define HARU_ERROR(msg, ...) { \
     fprintf(stderr, HARU_ERROR_PREFIX msg \
-            " At %s:%d\n", \
+            " At %s:%d\033[1;0m\n", \
             __func__, __VA_ARGS__, __FILE__, __LINE__ - 1); \
 }
 // uint32_t haru_errno = 0;
 
 #define HARU_STATUS(msg, ...) { \
-    fprintf(stderr, HARU_STATUS_PREFIX msg "\n" \
+    fprintf(stderr, HARU_STATUS_PREFIX msg "\033[1;0m\n" \
              ,__VA_ARGS__); \
 }
 #define HARU_MALLOC_CHK(ret) { \

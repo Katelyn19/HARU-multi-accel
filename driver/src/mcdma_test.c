@@ -286,6 +286,12 @@ int config_mcdma_mm2s(mcdma_device_t *device) {
 	return 0;
 }
 
+/*
+	Programs the s2mm in the following order:
+	1. channel enable
+	2. current bd
+	3. fetch
+*/
 int config_mcdma_s2mm(mcdma_device_t *device) {
 	// reset mcdma s2mm
 	// INFO("%s", "Reset s2mm.");

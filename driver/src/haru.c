@@ -160,6 +160,7 @@ int32_t haru_multi_accel_load_reference(haru_t *haru, int32_t *ref, uint32_t siz
 
         // Set up channel and buffer descriptor
         axi_mcdma_mm2s_bd_init(&haru->axi_mcdma, 0, (transfer_size) * sizeof(int32_t), 0);
+        // axi_mcdma_haru_query_transfer(&haru->axi_mcdma, 0, (transfer_size) * sizeof(int32_t), (transfer_size) * sizeof(int32_t));
         axi_mcdma_mm2s_transfer(&haru->axi_mcdma);
 
         size_left -= transfer_size;

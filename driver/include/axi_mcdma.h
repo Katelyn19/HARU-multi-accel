@@ -27,13 +27,18 @@ void axi_mcdma_s2mm_bd_init(axi_mcdma_t *device, int channel_idx, uint32_t trans
 void axi_mcdma_mm2s_transfer(axi_mcdma_t *device);
 void axi_mcdma_s2mm_transfer(axi_mcdma_t *device);
 
-void config_and_start_mcdma_mm2s_channel(axi_mcdma_t *device, int channel_idx);
-void config_and_start_mcdma_s2mm_channel(axi_mcdma_t *device, int channel_idx);
+void config_mcdma_mm2s_channel(axi_mcdma_t *device, int channel_idx);
+void config_mcdma_s2mm_channel(axi_mcdma_t *device, int channel_idx);
 void mcdma_mm2s_busy_wait(axi_mcdma_t *device);
 void mcdma_s2mm_busy_wait(axi_mcdma_t *device);
 void mcdma_mm2s_stop(axi_mcdma_t *device);
 void mcdma_s2mm_stop(axi_mcdma_t *device);
 void mcdma_reset(axi_mcdma_t *device);
+void mcdma_mm2s_program_tail_bd(axi_mcdma_t *device, int channel_idx);
+void mcdma_s2mm_program_tail_bd(axi_mcdma_t *device, int channel_idx);
+void mcdma_mm2s_start(axi_mcdma_t *device);
+void mcdma_s2mm_start(axi_mcdma_t *device);
+void mm2s_clear_channel_status(axi_mcdma_t *device);
 
 void mm2s_common_status(axi_mcdma_t *device);
 void mm2s_channel_status(axi_mcdma_t *device);
