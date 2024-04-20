@@ -8,6 +8,7 @@ This header file defines the register addresses and values to control the MCDMA.
 #define AXI_MCDMA
 
 #include <stdint.h>
+#include <stdlib.h>
 #include "misc.h"
 
 /*
@@ -26,9 +27,11 @@ void axi_mcdma_mm2s_bd_init(axi_mcdma_t *device, int channel_idx, uint32_t trans
 void axi_mcdma_s2mm_bd_init(axi_mcdma_t *device, int channel_idx, uint32_t transfer_size, uint32_t bd_addr_offset);
 void axi_mcdma_mm2s_transfer(axi_mcdma_t *device);
 void axi_mcdma_s2mm_transfer(axi_mcdma_t *device);
+void axi_mcdma_release(axi_mcdma_t *device);
+void axi_mcdma_free(axi_mcdma_t *device);
 
-void config_mcdma_mm2s_channel(axi_mcdma_t *device, int channel_idx);
-void config_mcdma_s2mm_channel(axi_mcdma_t *device, int channel_idx);
+void mcdma_config_mm2s_channel(axi_mcdma_t *device, int channel_idx);
+void mcdma_config_s2mm_channel(axi_mcdma_t *device, int channel_idx);
 void mcdma_mm2s_busy_wait(axi_mcdma_t *device);
 void mcdma_s2mm_busy_wait(axi_mcdma_t *device);
 void mcdma_mm2s_stop(axi_mcdma_t *device);
@@ -49,7 +52,7 @@ void s2mm_bd_status(axi_mcdma_channel_t *channel);
 /*
     AXI MCDMA Device Config
 */
-#define NUM_CHANNELS 4
+#define NUM_CHANNELS 1
 
 /* mcdma device */
 struct axi_mcdma {

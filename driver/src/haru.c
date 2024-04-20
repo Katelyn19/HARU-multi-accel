@@ -94,6 +94,11 @@ void haru_release(haru_t *haru) {
     dtw_accel_release(&haru->dtw_accel);
 }
 
+void haru_multi_accel_release(haru_t *haru) {
+    axi_mcdma_release(&haru->axi_mcdma);
+    dtw_accel_release(&haru->dtw_accel);
+}
+
 void haru_check_key(haru_t *haru) {
     uint32_t key = dtw_accel_get_key(&haru->dtw_accel);
     if (key != 0x0ca7cafe) {
@@ -190,4 +195,9 @@ void haru_multi_accel_process_query(haru_t *haru, int32_t *query, uint32_t size,
     dtw_accel_set_mode(&haru->dtw_accel, DTW_ACCEL_MODE_QUERY);
     axi_mcdma_haru_query_transfer(&haru->axi_mcdma, 0, size * sizeof(int32_t), sizeof(search_result_t));
     memcpy(results, haru->axi_mcdma.v_buffer_dst_addr, sizeof(search_result_t));
+}
+
+void haru_multi_accel_free(haru_t *haru) {
+    axi_mcdma_free(&haru->axi_mcdma);
+    free(haru);
 }

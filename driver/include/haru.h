@@ -63,6 +63,8 @@ typedef struct {
 
 int32_t haru_init(haru_t *haru);
 void haru_release(haru_t *haru);
+void haru_multi_accel_release(haru_t *haru);
+void haru_multi_accel_free(haru_t *haru);
 void haru_check_key(haru_t *haru);
 uint32_t haru_get_version(haru_t *haru);
 void haru_get_load_done(haru_t *haru);
