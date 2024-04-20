@@ -406,6 +406,9 @@ assign w_status[8:6]                    = w_dtw_core_state;
 // assign w_status[23:9]                   = w_dtw_core_addrW_ref;
 // assign w_status[31:24]                  = w_dtw_core_addrR_ref[7:0];
 assign w_status[31:9]                   = 0;
+assign SINK_AXIS_tid [AXIS_ID_WIDTH - 1:0]                      = SRC_AXIS_tid;
+assign SINK_AXIS_tdest [AXIS_DEST_WIDTH - 1:0]                  = SRC_AXIS_tdest;
+assign SINK_AXIS_tkeep [AXIS_KEEP_WIDTH - 1:0]                  = SRC_AXIS_tkeep;
 
 /* ===============================
  * synchronous logic
