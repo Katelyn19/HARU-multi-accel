@@ -48,7 +48,7 @@ SOFTWARE. */
 #define HARU_STATUS_PREFIX "\033[1;0m[HARU_STATUS]\033[1;36m "
 
 #ifndef LOG_HARU
-#define LOG_HARU 1
+#define LOG_HARU 0
 #endif
 
 #define HARU_LOG(msg, ...) { \

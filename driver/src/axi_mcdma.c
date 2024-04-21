@@ -151,8 +151,7 @@ void axi_mcdma_mm2s_bd_init(axi_mcdma_t *device, int channel_idx, uint32_t trans
 	channel->mm2s_curr_bd_addr = device->p_mm2s_bd_addr + bd_addr_offset;
 	channel->mm2s_tail_bd_addr = device->p_mm2s_bd_addr + bd_addr_offset;
 	mm2s_bd->p_bd_addr = device->p_mm2s_bd_addr + bd_addr_offset;
-	mm2s_bd->v_bd_addr = device->v_mm2s_bd_addr;
-	*mm2s_bd->v_bd_addr += bd_addr_offset;
+	mm2s_bd->v_bd_addr = device->v_mm2s_bd_addr + bd_addr_offset;
 
 	mm2s_bd->next_mcdma_bd = NULL;
 	mm2s_bd->next_bd_addr = channel->mm2s_tail_bd_addr;
@@ -437,6 +436,9 @@ void mcdma_mm2s_busy_wait(axi_mcdma_t *device) {
 	uint32_t mm2s_sr = _reg_get(device->v_baseaddr, AXI_MCDMA_MM2S_CSR);
 	while (!(mm2s_sr & AXI_MCDMA_MM2S_IDLE)) {
 		mm2s_sr = _reg_get(device->v_baseaddr, AXI_MCDMA_MM2S_CSR);
+		mm2s_common_status(device);
+		mm2s_channel_status(device);
+		mm2s_bd_status(device->channels[0]);
 	}
 }
 
@@ -483,12 +485,23 @@ void mcdma_reset(axi_mcdma_t *device) {
 
 void mcdma_mm2s_stop(axi_mcdma_t *device) {
 	HARU_LOG("%s", "Stop mm2s MCDMA operations.");
-	_reg_set(device->v_baseaddr, AXI_MCDMA_MM2S_CCR, AXI_MCDMA_MM2S_RS);
+	_reg_set(device->v_baseaddr, AXI_MCDMA_MM2S_CCR, !AXI_MCDMA_MM2S_RS);
+
+	uint32_t mm2s_sr = _reg_get(device->v_baseaddr, AXI_MCDMA_MM2S_CSR);
+	while (!(mm2s_sr & AXI_MCDMA_MM2S_HALTED)) {
+		mm2s_sr = _reg_get(device->v_baseaddr, AXI_MCDMA_MM2S_CSR);
+	}
+
 }
 
 void mcdma_s2mm_stop(axi_mcdma_t *device) {
 	HARU_LOG("%s", "Stop s2mm MCDMA operations.");
-	_reg_set(device->v_baseaddr, AXI_MCDMA_S2MM_CCR, AXI_MCDMA_S2MM_RS);
+	_reg_set(device->v_baseaddr, AXI_MCDMA_S2MM_CCR, !AXI_MCDMA_S2MM_RS);
+
+	uint32_t s2mm_sr = _reg_get(device->v_baseaddr, AXI_MCDMA_S2MM_CSR);
+	while (!(s2mm_sr & AXI_MCDMA_S2MM_HALTED)) {
+		s2mm_sr = _reg_get(device->v_baseaddr, AXI_MCDMA_S2MM_CSR);
+	}
 }
 
 void mm2s_common_status(axi_mcdma_t *device) {
