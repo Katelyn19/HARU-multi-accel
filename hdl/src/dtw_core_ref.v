@@ -13,7 +13,6 @@
 module dtw_core_ref #(
     parameter DATA_WIDTH                            = 16,   // Data width
     parameter ADDR_WIDTH                            = 32,   // AXI data width
-    parameter SQG_SIZE                              = 250,  // Squiggle size
     parameter REF_INIT                              = 0,
     parameter REFMEM_PTR_WIDTH                      = 20
 ) (
@@ -22,7 +21,7 @@ module dtw_core_ref #(
     input   wire                                    rst_in,
     input   wire                                    rs_in,                  // Run: 1, Stop: 0
     input   wire                                    op_mode_in,
-    input   wire [ADDR_WIDTH-1 : 0]                 ref_len_in,
+    input   wire [ADDR_WIDTH-1: 0]                 ref_len_in,
     output  reg                                     busy_out,               // Idle: 0, busy: 1
     output  wire                                    ref_load_done_out,
 
@@ -33,12 +32,12 @@ module dtw_core_ref #(
     input   wire [DATA_WIDTH-1:0]                   src_fifo_data_in,      // Src FIFO Data
 
     // Ref mem signals
-    input   wire [ADDR_WIDTH-1 : 0]                 ref_addr_in,
-    output  wire [DATA_WIDTH-1:0]                   ref_data_out,
+    input   wire [REFMEM_PTR_WIDTH-1: 0]            ref_addr_in,
+    output  reg  [DATA_WIDTH-1:0]                   ref_data_out,
 
     // Debug signals
     output  wire [1:0]                              dbg_state,
-    output  wire [ADDR_WIDTH-1:0]                   dbg_addr_ref,
+    output  wire [REFMEM_PTR_WIDTH-1: 0]            dbg_addr_ref,
     output  wire                                    dbg_wren_ref
 );
 /* ===============================
@@ -61,7 +60,7 @@ localparam [1:0] // n states
 reg                                         ref_load_done;
 reg                                         r_src_fifo_clear;
 reg                                         wren_ref_node;           // Write enable for refmem
-reg [ADDR_WIDTH-1:0]                        ref_addr_node;
+reg [REFMEM_PTR_WIDTH-1:0]                  ref_addr_node;
 
 // FSM state
 reg [1:0] r_state;
@@ -101,7 +100,6 @@ assign src_fifo_clear_out = r_src_fifo_clear;
 always @(posedge clk_in) begin
     if (rst_in) begin
         r_state <= IDLE;
-        ref_load_done <= 0;
     end else begin
         case (r_state)
         IDLE: begin
@@ -119,7 +117,7 @@ always @(posedge clk_in) begin
         end
 
         REF_LOAD: begin
-            if (ref_addr_node < ref_len_in) begin
+            if (ref_addr_node[REFMEM_PTR_WIDTH-1:0] < ref_len_in[REFMEM_PTR_WIDTH-1:0]) begin
                 r_state <= REF_LOAD;
             end else begin
                 r_state <= IDLE;
@@ -162,6 +160,12 @@ always @(posedge clk_in) begin
         end else begin
             wren_ref_node <= 1'b0;
             ref_addr_node <= ref_addr_node;
+        end
+
+        if (!(src_fifo_empty_in) && (ref_addr_node[REFMEM_PTR_WIDTH-1:0] == (ref_len_in[REFMEM_PTR_WIDTH-1:0] - 1'b1))) begin
+            ref_load_done <= 1'b1;
+        end else begin
+            ref_load_done <= 1'b0;
         end
     end
 

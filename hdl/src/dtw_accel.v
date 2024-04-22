@@ -37,6 +37,7 @@ SOFTWARE. */
 module dtw_accel #(
     parameter ADDR_WIDTH            = 16,
     parameter DATA_WIDTH            = 32,
+    parameter DTW_DATA_WIDTH        = 16,
 
     parameter AXIS_DATA_WIDTH       = 32,
     parameter AXIS_DEST_WIDTH       = 4,
@@ -123,7 +124,11 @@ module dtw_accel #(
     output wire                             SINK_AXIS_tlast,
     input  wire                             SINK_AXIS_tready,
     output wire                             SINK_AXIS_tuser,
-    output wire                             SINK_AXIS_tvalid
+    output wire                             SINK_AXIS_tvalid,
+
+    output wire [1:0]                       dbg_dtw_core_ref_state,
+    output wire [REFMEM_PTR_WIDTH - 1:0]    dbg_dtw_core_ref_addr,
+    output wire                             dbg_dtw_core_ref_wren
 );
 
 /* ===============================
@@ -191,6 +196,7 @@ wire                            w_dtw_core_mode;
 // Status Register bits
 wire                            w_dtw_core_busy;
 wire                            w_dtw_core_load_done;
+wire                            w_dtw_core_ref_busy;
 
 // Src FIFO
 wire                            w_src_fifo_clear;
@@ -216,12 +222,15 @@ wire                            w_sink_fifo_r_stb;
 wire                            w_sink_fifo_empty;
 wire                            w_sink_fifo_not_empty;
 
+// dtw core ref mem 
+reg [DTW_DATA_WIDTH - 1:0]      w_ref_r_data;
+reg [REFMEM_PTR_WIDTH - 1:0]    w_ref_r_addr;
+
 // dtw core debug
 wire  [2:0]                     w_dtw_core_state;
 wire  [REFMEM_PTR_WIDTH-1:0]   w_dtw_core_addr_ref;
 wire  [31:0]                    w_dtw_core_nquery;
 wire  [31:0]                    w_dtw_core_curr_qid;
-
 
 /* ===============================
  * initialization
@@ -315,7 +324,7 @@ fifo #(
 
 // DTW core
 dtw_core #(
-    .WIDTH              (16),
+    .WIDTH              (DTW_DATA_WIDTH),
     .AXIS_WIDTH         (AXIS_DATA_WIDTH),
     .REF_INIT           (0),
     .REFMEM_PTR_WIDTH   (REFMEM_PTR_WIDTH)
@@ -327,7 +336,6 @@ dtw_core #(
     .ref_len            (r_ref_len),
     .op_mode            (w_dtw_core_mode),
     .busy               (w_dtw_core_busy),
-    .load_done          (w_dtw_core_load_done),
 
     .src_fifo_clear     (w_src_fifo_clear),
     .src_fifo_rden      (w_src_fifo_r_stb),
@@ -339,12 +347,47 @@ dtw_core #(
     .sink_fifo_data     (w_sink_fifo_w_data),
     .sink_fifo_last     (w_sink_fifo_r_last),
 
+    // Ref mem signals
+    .ref_load_done      (w_dtw_core_load_done),
+    .dataout_ref        (w_ref_r_data),
+    .addr_ref           (w_ref_r_addr),
+
     .dbg_state          (w_dtw_core_state),
     .dbg_addr_ref       (w_dtw_core_addr_ref),
 
     .dbg_cycle_counter  (w_dtw_core_cycle_counter),
     .dbg_nquery         (w_dtw_core_nquery),
     .dbg_curr_qid       (w_dtw_core_curr_qid)
+);
+
+dtw_core_ref #(
+    .DATA_WIDTH         (DTW_DATA_WIDTH),
+    .ADDR_WIDTH         (AXIS_DATA_WIDTH),
+    .REF_INIT           (0),
+    .REFMEM_PTR_WIDTH   (REFMEM_PTR_WIDTH)
+) dc_ref (
+
+    // Main Module signals
+    .clk_in             (S_AXI_clk),
+    .rst_in             (w_dtw_core_rst),
+    .rs_in              (w_dtw_core_rs),                  // Run: 1, Stop: 0
+    .op_mode_in         (w_dtw_core_mode),
+    .ref_len_in         (r_ref_len),
+    .busy_out           (w_dtw_core_ref_busy),               // Idle: 0, busy: 1
+    .ref_load_done_out  (w_dtw_core_load_done),
+
+    
+    .src_fifo_clear_out (w_src_fifo_clear),     // Src FIFO Clear signal
+    .src_fifo_rden_out  (w_src_fifo_r_stb),      // Src FIFO Read enable
+    .src_fifo_empty_in  (w_src_fifo_empty),     // Src FIFO Empty
+    .src_fifo_data_in   (w_src_fifo_r_data[DTW_DATA_WIDTH - 1:0]),      // Src FIFO Data
+
+    .ref_addr_in        (w_ref_r_addr),
+    .ref_data_out       (w_ref_r_data),
+
+    .dbg_state          (dbg_dtw_core_ref_state),
+    .dbg_addr_ref       (dbg_dtw_core_ref_addr),
+    .dbg_wren_ref       (dbg_dtw_core_ref_wren)
 );
 
 fifo #(
@@ -403,6 +446,7 @@ assign w_status[3]                      = w_src_fifo_full;
 assign w_status[4]                      = w_sink_fifo_empty;
 assign w_status[5]                      = w_sink_fifo_full;
 assign w_status[8:6]                    = w_dtw_core_state;
+assign w_status[7]                      = w_dtw_core_ref_busy;
 // assign w_status[23:9]                   = w_dtw_core_addrW_ref;
 // assign w_status[31:24]                  = w_dtw_core_addrR_ref[7:0];
 assign w_status[31:9]                   = 0;
