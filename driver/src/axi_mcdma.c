@@ -232,7 +232,7 @@ void axi_mcdma_s2mm_bd_init(axi_mcdma_t *device, int channel_idx, uint32_t trans
 	HARU_LOG("reg@0x%03x : 0x%08x (bd status)", s2mm_bd->p_bd_addr + AXI_MCDMA_S2MM_BD_STATUS, 0x00000000);
 }
 
-void axi_mcdma_mm2s_transfer(axi_mcdma_t *device) {
+int axi_mcdma_mm2s_transfer(axi_mcdma_t *device) {
 	// Clearup
 	mcdma_reset(device);
 	mcdma_s2mm_stop(device);
@@ -258,15 +258,22 @@ void axi_mcdma_mm2s_transfer(axi_mcdma_t *device) {
 		}
 	}
 
-	mcdma_mm2s_busy_wait(device);
+	int res;
+	res = mcdma_mm2s_busy_wait(device);
+	if (res) {
+		HARU_ERROR("%s", "mm2s transfer failed.");
+		return -1;
+	}
+
 	HARU_LOG("%s", "mm2s transfer done.");
 	mm2s_common_status(device);
 	mm2s_channel_status(device);
 	mm2s_bd_status(device->channels[0]);
 
+	return 0;
 }
 
-void axi_mcdma_s2mm_transfer(axi_mcdma_t *device) {
+int axi_mcdma_s2mm_transfer(axi_mcdma_t *device) {
 	// Config and start
 	_reg_set(device->v_baseaddr, AXI_MCDMA_S2MM_CHEN, device->channel_en);
 	HARU_LOG("reg@0x%03x : 0x%08x (channel enable)", AXI_MCDMA_S2MM_CHEN, device->channel_en);
@@ -281,11 +288,19 @@ void axi_mcdma_s2mm_transfer(axi_mcdma_t *device) {
 		}
 	}
 
-	mcdma_s2mm_busy_wait(device);
+	int res;
+	res = mcdma_s2mm_busy_wait(device);
+	if (res) {
+		HARU_ERROR("%s", "s2mm transfer failed.");
+		return -1;
+	}
+
 	HARU_LOG("%s", "s2mm transfer done.");
 	s2mm_common_status(device);
 	s2mm_channel_status(device);
 	s2mm_bd_status(device->channels[0]);
+
+	return 0;
 }
 
 void axi_mcdma_release(axi_mcdma_t *device) {
@@ -333,7 +348,7 @@ void axi_mcdma_free(axi_mcdma_t *device) {
 	}
 }
 
-void axi_mcdma_haru_query_transfer(axi_mcdma_t *device, int channel_idx, uint32_t src_len, uint32_t dst_len) {
+int axi_mcdma_haru_query_transfer(axi_mcdma_t *device, int channel_idx, uint32_t src_len, uint32_t dst_len) {
 	// Clearup
 	mcdma_reset(device);
 	mcdma_s2mm_stop(device);
@@ -356,10 +371,6 @@ void axi_mcdma_haru_query_transfer(axi_mcdma_t *device, int channel_idx, uint32_
 	mcdma_s2mm_start(device);
 	mcdma_s2mm_program_tail_bd(device, channel_idx);
 
-	s2mm_common_status(device);
-	s2mm_channel_status(device);
-	s2mm_bd_status(device->channels[0]);
-
 	/* mm2s setup */
 	// mm2s bd config
 	axi_mcdma_mm2s_bd_init(device, 0, src_len, 0);
@@ -371,21 +382,28 @@ void axi_mcdma_haru_query_transfer(axi_mcdma_t *device, int channel_idx, uint32_
 	mcdma_mm2s_start(device);
 	mcdma_mm2s_program_tail_bd(device, channel_idx);
 
-	mm2s_common_status(device);
-	mm2s_channel_status(device);
-	mm2s_bd_status(device->channels[0]);
-
-	mcdma_mm2s_busy_wait(device);
+	int res;
+	res = mcdma_mm2s_busy_wait(device);
+	if (res) {
+		HARU_ERROR("%s", "mm2s query transfer failed.");
+		return -1;
+	}
 	HARU_LOG("%s", "mm2s query transfer done.");
 	mm2s_common_status(device);
 	mm2s_channel_status(device);
 	mm2s_bd_status(device->channels[0]);
 
-	mcdma_s2mm_busy_wait(device);
+	res = mcdma_s2mm_busy_wait(device);
+	if (res) {
+		HARU_ERROR("%s", "s2mm query transfer failed.");
+		return -1;
+	}
 	HARU_LOG("%s", "s2mm query transfer done.");
 	s2mm_common_status(device);
 	s2mm_channel_status(device);
 	s2mm_bd_status(device->channels[0]);
+
+	return 0;
 }
 
 
@@ -413,11 +431,22 @@ void mcdma_config_s2mm_channel(axi_mcdma_t *device, int channel_idx) {
 void mcdma_mm2s_start(axi_mcdma_t *device) {
 	_reg_set(device->v_baseaddr, AXI_MCDMA_MM2S_CCR, AXI_MCDMA_MM2S_RS);
 	HARU_LOG("reg@0x%03x : 0x%08x (run)", AXI_MCDMA_MM2S_CCR, AXI_MCDMA_MM2S_RS);
+
+	uint32_t mm2s_sr = _reg_get(device->v_baseaddr, AXI_MCDMA_MM2S_CSR);
+	while (mm2s_sr & AXI_MCDMA_S2MM_HALTED) {
+		mm2s_sr = _reg_get(device->v_baseaddr, AXI_MCDMA_MM2S_CSR);
+	}
+
 }
 
 void mcdma_s2mm_start(axi_mcdma_t *device) {
 	_reg_set(device->v_baseaddr, AXI_MCDMA_S2MM_CCR, AXI_MCDMA_S2MM_RS);
 	HARU_LOG("reg@0x%03x : 0x%08x (run)", AXI_MCDMA_S2MM_CCR, AXI_MCDMA_S2MM_RS);
+
+	uint32_t s2mm_sr = _reg_get(device->v_baseaddr, AXI_MCDMA_S2MM_CSR);
+	while (s2mm_sr & AXI_MCDMA_S2MM_HALTED) {
+		s2mm_sr = _reg_get(device->v_baseaddr, AXI_MCDMA_S2MM_CSR);
+	}
 }
 
 void mcdma_mm2s_program_tail_bd(axi_mcdma_t *device, int channel_idx) {
@@ -430,28 +459,42 @@ void mcdma_s2mm_program_tail_bd(axi_mcdma_t *device, int channel_idx) {
 	HARU_LOG("reg@0x%03x : 0x%08x (s2mm tail bd)", AXI_MCDMA_S2MM_CHTAILDESC_LSB + AXI_MCDMA_CH_OFFSET*channel_idx, device->channels[channel_idx]->s2mm_tail_bd_addr);
 }
 
-void mcdma_mm2s_busy_wait(axi_mcdma_t *device) {
+int mcdma_mm2s_busy_wait(axi_mcdma_t *device) {
 	// Busy wait
 	HARU_LOG("%s", "Waiting for mm2s to go idle.");
 	uint32_t mm2s_sr = _reg_get(device->v_baseaddr, AXI_MCDMA_MM2S_CSR);
-	while (!(mm2s_sr & AXI_MCDMA_MM2S_IDLE)) {
+	while (!(mm2s_sr & AXI_MCDMA_MM2S_IDLE) && !(mm2s_sr & AXI_MCDMA_MM2S_HALTED)) {
 		mm2s_sr = _reg_get(device->v_baseaddr, AXI_MCDMA_MM2S_CSR);
+	}
+	
+	if (mm2s_sr & AXI_MCDMA_MM2S_HALTED) {
 		mm2s_common_status(device);
 		mm2s_channel_status(device);
 		mm2s_bd_status(device->channels[0]);
+
+		return -1;
 	}
+
+	return 0;
 }
 
-void mcdma_s2mm_busy_wait(axi_mcdma_t *device) {
+int mcdma_s2mm_busy_wait(axi_mcdma_t *device) {
 	// Busy wait
 	HARU_LOG("%s", "Waiting for s2mm to go idle.");
 	uint32_t s2mm_sr = _reg_get(device->v_baseaddr, AXI_MCDMA_S2MM_CSR);
-	while (!(s2mm_sr & AXI_MCDMA_S2MM_IDLE)) {
+	while (!(s2mm_sr & AXI_MCDMA_S2MM_IDLE) && !(s2mm_sr & AXI_MCDMA_S2MM_HALTED)) {
 		s2mm_sr = _reg_get(device->v_baseaddr, AXI_MCDMA_S2MM_CSR);
+	}
+
+	if (s2mm_sr & AXI_MCDMA_S2MM_HALTED) {
 		s2mm_common_status(device);
 		s2mm_channel_status(device);
 		s2mm_bd_status(device->channels[0]);
+
+		return -1;
 	}
+
+	return 0;
 }
 
 int get_bd_complete(uint32_t *bd_v_addr) {

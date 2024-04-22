@@ -61,8 +61,8 @@ SOFTWARE. */
 
 #define HARU_ERROR(msg, ...) { \
     fprintf(stderr, HARU_ERROR_PREFIX msg \
-            " At %s:%d\033[1;0m\n", \
-            __func__, __VA_ARGS__, __FILE__, __LINE__ - 1); \
+            " \033[1;0m\n", \
+            __func__, __VA_ARGS__); \
 }
 
 // uint32_t haru_errno = 0;
