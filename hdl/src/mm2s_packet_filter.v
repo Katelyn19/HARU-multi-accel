@@ -25,7 +25,6 @@ wire [NUM_FIFOS-1:0]                        fifo_not_ready;
 /* ===============================
  * asynchronous logic
  * =============================== */
-assign fifo_data[FIFO_DATA_WIDTH-1:0] = SRC_AXIS_tdata[FIFO_DATA_WIDTH-1:0];
 assign SRC_AXIS_tready = !(|fifo_not_ready);
 
 genvar i;
@@ -33,6 +32,7 @@ generate
     for (i = 0; i < NUM_FIFOS; i = i + 1) begin
         assign fifo_wren[i] = ((SRC_AXIS_tdest == i) && (SRC_AXIS_tvalid) && (!fifo_full[i])) ? 1'b1 : 1'b0;
         assign fifo_not_ready[i] = ((SRC_AXIS_tdest == i) && (SRC_AXIS_tvalid) && (fifo_full[i])) ? 1'b1 : 1'b0;
+        assign fifo_data[i] = SRC_AXIS_tdata[FIFO_DATA_WIDTH-1:0];
     end
 endgenerate
 
