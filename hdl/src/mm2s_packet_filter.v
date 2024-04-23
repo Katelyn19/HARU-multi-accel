@@ -17,8 +17,14 @@ module mm2s_packet_filter #(
     output  wire [FIFO_DATA_WIDTH-1:0]              fifo_data     // Sink FIFO Data
 );
 
+/* ===============================
+ * registers / wires
+ * =============================== */
 wire [NUM_FIFOS-1:0]                        fifo_not_ready;
 
+/* ===============================
+ * asynchronous logic
+ * =============================== */
 assign fifo_data[FIFO_DATA_WIDTH-1:0] = SRC_AXIS_tdata[FIFO_DATA_WIDTH-1:0];
 assign SRC_AXIS_tready = !(|fifo_not_ready);
 
