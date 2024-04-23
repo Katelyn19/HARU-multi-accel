@@ -13,9 +13,9 @@ module mm2s_packet_filter #(
 
     // FIFO peripherals
 
-    output  reg [NUM_FIFOS-1:0]                    fifo_wren,     // Sink FIFO Write enable
+    output  wire [NUM_FIFOS-1:0]                    fifo_wren,     // Sink FIFO Write enable
     input   wire [NUM_FIFOS-1:0]                   fifo_full,     // Sink FIFO Full
-    output  reg [FIFO_DATA_WIDTH-1:0]              fifo_data     // Sink FIFO Data
+    output  wire [FIFO_DATA_WIDTH-1:0]              fifo_data     // Sink FIFO Data
 );
 
 wire [NUM_FIFOS-1:0]                        fifo_not_ready;
@@ -25,7 +25,7 @@ assign SRC_AXIS_tready = !(|fifo_not_ready);
 
 genvar i;
 generate
-    for (i = 0; i < NUM_FIFOS; i++) begin
+    for (i = 0; i < NUM_FIFOS; i = i + 1) begin
         assign fifo_wren[i] = ((SRC_AXIS_tdest == i) && (SRC_AXIS_tvalid) && (!fifo_full[i])) ? 1'b1 : 1'b0;
         assign fifo_not_ready[i] = ((SRC_AXIS_tdest == i) && (SRC_AXIS_tvalid) && (fifo_full[i])) ? 1'b1 : 1'b0;
     end
