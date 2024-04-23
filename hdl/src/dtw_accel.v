@@ -223,8 +223,10 @@ wire                            w_sink_fifo_empty;
 wire                            w_sink_fifo_not_empty;
 
 // dtw core ref mem 
-reg [DTW_DATA_WIDTH - 1:0]      w_ref_r_data;
-reg [REFMEM_PTR_WIDTH - 1:0]    w_ref_r_addr;
+reg [DTW_DATA_WIDTH - 1:0]      w_ref_r_data_0;
+reg [REFMEM_PTR_WIDTH - 1:0]    w_ref_r_addr_0;
+reg [DTW_DATA_WIDTH - 1:0]      w_ref_r_data_1;
+reg [REFMEM_PTR_WIDTH - 1:0]    w_ref_r_addr_1;
 
 // dtw core debug
 wire  [2:0]                     w_dtw_core_state;
@@ -328,7 +330,7 @@ dtw_core #(
     .AXIS_WIDTH         (AXIS_DATA_WIDTH),
     .REF_INIT           (0),
     .REFMEM_PTR_WIDTH   (REFMEM_PTR_WIDTH)
-) dc (
+) dc_0 (
     .clk                (S_AXI_clk),
     .rst                (w_dtw_core_rst),
     .rs                 (w_dtw_core_rs),
@@ -349,8 +351,8 @@ dtw_core #(
 
     // Ref mem signals
     .ref_load_done      (w_dtw_core_load_done),
-    .dataout_ref        (w_ref_r_data),
-    .addr_ref           (w_ref_r_addr),
+    .dataout_ref        (w_ref_r_data_0),
+    .addr_ref           (w_ref_r_addr_0),
 
     .dbg_state          (w_dtw_core_state),
     .dbg_addr_ref       (w_dtw_core_addr_ref),
@@ -372,7 +374,7 @@ dtw_core_ref #(
     .rst_in             (w_dtw_core_rst),
     .rs_in              (w_dtw_core_rs),                  // Run: 1, Stop: 0
     .op_mode_in         (w_dtw_core_mode),
-    .ref_len_in         (r_ref_len),
+    .ref_len_in         (r_ref_len[REFMEM_PTR_WIDTH-1:0]),
     .busy_out           (w_dtw_core_ref_busy),               // Idle: 0, busy: 1
     .ref_load_done_out  (w_dtw_core_load_done),
 
@@ -382,8 +384,10 @@ dtw_core_ref #(
     .src_fifo_empty_in  (w_src_fifo_empty),     // Src FIFO Empty
     .src_fifo_data_in   (w_src_fifo_r_data[DTW_DATA_WIDTH - 1:0]),      // Src FIFO Data
 
-    .ref_addr_in        (w_ref_r_addr),
-    .ref_data_out       (w_ref_r_data),
+    .ref_addr_0_in        (w_ref_r_addr_0),
+    .ref_data_0_out       (w_ref_r_data_0),
+    .ref_addr_1_in        (w_ref_r_addr_1),
+    .ref_data_1_out       (w_ref_r_data_1),
 
     .dbg_state          (dbg_dtw_core_ref_state),
     .dbg_addr_ref       (dbg_dtw_core_ref_addr),

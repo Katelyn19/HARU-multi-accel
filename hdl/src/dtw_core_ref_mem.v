@@ -39,10 +39,15 @@ module dtw_core_ref_mem #(
 )(
     input   wire                clk,
 
-    input   wire                wen,
-    input   wire [ptrWid-1:0]   addr,
-    input   wire [width-1:0]    din,
-    output  reg  [width-1:0]    dout
+    input   wire                wen_a,
+    input   wire [ptrWid-1:0]   addr_a,
+    input   wire [width-1:0]    din_a,
+    output  reg  [width-1:0]    dout_a,
+
+    input   wire                wen_b,
+    input   wire [ptrWid-1:0]   addr_b,
+    input   wire [width-1:0]    din_b,
+    output  reg  [width-1:0]    dout_b
 );
 
 /* ===============================
@@ -70,14 +75,19 @@ reg [width-1:0] MEM [0:depth-1];
  * =============================== */
 // Write
 always @(posedge clk) begin
-	if (wen) begin
-		MEM[addr] <= din;
-	end
+    if (wen_a) begin
+        MEM[addr_a] <= din_a;
+    end
+
+    if (wen_b) begin
+        MEM[addr_b] <= din_b;
+    end
 end
 
 // Read
 always @(posedge clk) begin
-    dout <= MEM[addr];
+    dout_a <= MEM[addr_a];
+    dout_b <= MEM[addr_b];
 end
 
 endmodule

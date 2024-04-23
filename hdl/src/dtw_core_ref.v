@@ -21,7 +21,7 @@ module dtw_core_ref #(
     input   wire                                    rst_in,
     input   wire                                    rs_in,                  // Run: 1, Stop: 0
     input   wire                                    op_mode_in,
-    input   wire [ADDR_WIDTH-1: 0]                 ref_len_in,
+    input   wire [REFMEM_PTR_WIDTH-1: 0]            ref_len_in,
     output  reg                                     busy_out,               // Idle: 0, busy: 1
     output  wire                                    ref_load_done_out,
 
@@ -32,8 +32,10 @@ module dtw_core_ref #(
     input   wire [DATA_WIDTH-1:0]                   src_fifo_data_in,      // Src FIFO Data
 
     // Ref mem signals
-    input   wire [REFMEM_PTR_WIDTH-1: 0]            ref_addr_in,
-    output  reg  [DATA_WIDTH-1:0]                   ref_data_out,
+    input   wire [REFMEM_PTR_WIDTH-1: 0]            ref_addr_0_in,
+    input   wire [REFMEM_PTR_WIDTH-1: 0]            ref_addr_1_in,
+    output  reg  [DATA_WIDTH-1:0]                   ref_data_0_out,
+    output  reg  [DATA_WIDTH-1:0]                   ref_data_1_out,
 
     // Debug signals
     output  wire [1:0]                              dbg_state,
@@ -59,8 +61,8 @@ localparam [1:0] // n states
  * =============================== */
 reg                                         ref_load_done;
 reg                                         r_src_fifo_clear;
-reg                                         wren_ref_node;           // Write enable for refmem
-reg [REFMEM_PTR_WIDTH-1:0]                  ref_addr_node;
+reg                                         wren_ref_node_0;           // Write enable for refmem
+reg [REFMEM_PTR_WIDTH-1:0]                  ref_addr_node_0;
 
 // FSM state
 reg [1:0] r_state;
@@ -77,18 +79,23 @@ dtw_core_ref_mem #(
 ) inst_dtw_core_ref_mem (
     .clk            (clk_in),
 
-    .wen          (wren_ref_node),
-    .addr         (ref_addr_node[REFMEM_PTR_WIDTH-1:0]),
-    .din          (src_fifo_data_in),
-    .dout         (ref_data_out)
+    .wen_a          (wren_ref_node_0),
+    .addr_a         (ref_addr_node_0[REFMEM_PTR_WIDTH-1:0]),
+    .din_a          (src_fifo_data_in),
+    .dout_a         (ref_data_0_out),
+
+    .wen_b          (1'b0),
+    .addr_b         (ref_addr_1_in[REFMEM_PTR_WIDTH-1:0]),
+    .din_b          ('d0),
+    .dout_b         (ref_data_1_out)
 );
 
 /* ===============================
  * asynchronous logic
  * =============================== */
 assign dbg_state = r_state;
-assign dbg_addr_ref = ref_addr_node;
-assign dbg_wren_ref = wren_ref_node;
+assign dbg_addr_ref = ref_addr_node_0;
+assign dbg_wren_ref = wren_ref_node_0;
 
 assign ref_load_done_out = ref_load_done;
 assign src_fifo_clear_out = r_src_fifo_clear;
@@ -117,7 +124,7 @@ always @(posedge clk_in) begin
         end
 
         REF_LOAD: begin
-            if (ref_addr_node[REFMEM_PTR_WIDTH-1:0] < ref_len_in[REFMEM_PTR_WIDTH-1:0]) begin
+            if (ref_addr_node_0[REFMEM_PTR_WIDTH-1:0] < ref_len_in[REFMEM_PTR_WIDTH-1:0]) begin
                 r_state <= REF_LOAD;
             end else begin
                 r_state <= IDLE;
@@ -139,13 +146,13 @@ always @(posedge clk_in) begin
     IDLE: begin
         busy_out <= 1'b0;
         src_fifo_rden_out <= 1'b0;
-        wren_ref_node <= 1'b0;
+        wren_ref_node_0 <= 1'b0;
         r_src_fifo_clear <= 1'b1;
 
         if (op_mode_in == MODE_DTW_READ) begin
-            ref_addr_node <= ref_addr_in;
+            ref_addr_node_0 <= ref_addr_0_in;
         end else begin
-            ref_addr_node <= 'd0;
+            ref_addr_node_0 <= 'd0;
         end
     end
 
@@ -155,14 +162,14 @@ always @(posedge clk_in) begin
         r_src_fifo_clear <= 1'b0;
 
         if (!src_fifo_empty_in && src_fifo_rden_out) begin
-            ref_addr_node <= ref_addr_node + 1'b1;
-            wren_ref_node <= 1'b1;
+            ref_addr_node_0 <= ref_addr_node_0 + 1'b1;
+            wren_ref_node_0 <= 1'b1;
         end else begin
-            wren_ref_node <= 1'b0;
-            ref_addr_node <= ref_addr_node;
+            wren_ref_node_0 <= 1'b0;
+            ref_addr_node_0 <= ref_addr_node_0;
         end
 
-        if (!(src_fifo_empty_in) && (ref_addr_node[REFMEM_PTR_WIDTH-1:0] == (ref_len_in[REFMEM_PTR_WIDTH-1:0] - 1'b1))) begin
+        if (!(src_fifo_empty_in) && (ref_addr_node_0[REFMEM_PTR_WIDTH-1:0] == (ref_len_in[REFMEM_PTR_WIDTH-1:0] - 1'b1))) begin
             ref_load_done <= 1'b1;
         end else begin
             ref_load_done <= 1'b0;
@@ -172,13 +179,13 @@ always @(posedge clk_in) begin
     DTW_READ: begin
         busy_out <= 1'b1;
         src_fifo_rden_out <= 1'b0;
-        wren_ref_node <= 1'b0;
+        wren_ref_node_0 <= 1'b0;
         r_src_fifo_clear <= 1'b0;
 
         if (op_mode_in == MODE_LOAD_REF) begin
-            ref_addr_node <= 'd0;
+            ref_addr_node_0 <= 'd0;
         end else begin
-            ref_addr_node <= ref_addr_in;
+            ref_addr_node_0 <= ref_addr_0_in;
         end
     end
     endcase
