@@ -62,15 +62,15 @@ module dtw_core #(
     // Ref mem signals
     input  wire                                     ref_load_done,
     input  reg  [WIDTH-1:0]                         dataout_ref,
-    output wire [REFMEM_PTR_WIDTH-1: 0]             addr_ref,
+    output wire [REFMEM_PTR_WIDTH-1: 0]             addr_ref
 
     // debug signals
-    output  wire [2:0]                              dbg_state,
-    output  wire [REFMEM_PTR_WIDTH-1:0]             dbg_addr_ref,
+    // output  wire [2:0]                              dbg_state,
+    // output  wire [REFMEM_PTR_WIDTH-1:0]             dbg_addr_ref,
 
-    output  wire [31:0]             dbg_cycle_counter,
-    output  wire [31:0]             dbg_nquery,
-    output  wire [31:0]             dbg_curr_qid
+    // output  wire [31:0]             dbg_cycle_counter,
+    // output  wire [31:0]             dbg_nquery,
+    // output  wire [31:0]             dbg_curr_qid
 );
 
 /* ===============================

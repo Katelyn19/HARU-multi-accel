@@ -49,7 +49,9 @@ module dtw_accel #(
     parameter FIFO_DEPTH            = 4,
     
     parameter INVERT_AXI_RESET      = 1,
-    parameter INVERT_AXIS_RESET     = 1
+    parameter INVERT_AXIS_RESET     = 1,
+
+    parameter NUM_ACCEL             = 2
 )(
     input  wire                             S_AXI_clk,
     input  wire                             S_AXI_rst,
@@ -163,6 +165,7 @@ localparam REFMEM_PTR_WIDTH = 18;
 /* ===============================
  * registers/wires
  * =============================== */
+genvar i;
 // User Interface
 wire                            w_axi_rst;
 wire                            w_axis_rst;
@@ -194,39 +197,37 @@ wire                            w_dtw_core_rs;
 wire                            w_dtw_core_mode;
 
 // Status Register bits
-wire                            w_dtw_core_busy;
+wire [NUM_ACCEL-1:0]            w_dtw_core_busy;
 wire                            w_dtw_core_load_done;
-wire                            w_dtw_core_ref_busy;
+wire [NUM_ACCEL-1:0]            w_dtw_core_ref_busy;
 
 // Src FIFO
-wire                            w_src_fifo_clear;
-wire  [FIFO_DATA_WIDTH - 1:0]   w_src_fifo_w_data;
-wire                            w_src_fifo_w_stb;
-wire                            w_src_fifo_full;
-wire                            w_src_fifo_not_full;
+wire [NUM_ACCEL-1:0]            w_src_fifo_clear;
+wire  [FIFO_DATA_WIDTH - 1:0]   w_src_fifo_w_data [NUM_ACCEL-1:0];
+wire [NUM_ACCEL-1:0]            w_src_fifo_w_stb;
+wire [NUM_ACCEL-1:0]            w_src_fifo_full;
+wire [NUM_ACCEL-1:0]            w_src_fifo_not_full;
 
-wire  [FIFO_DATA_WIDTH - 1:0]   w_src_fifo_r_data;
-wire                            w_src_fifo_r_stb;
-wire                            w_src_fifo_empty;
-wire                            w_src_fifo_not_empty;
+wire  [FIFO_DATA_WIDTH - 1:0]   w_src_fifo_r_data [NUM_ACCEL-1:0];
+wire [NUM_ACCEL-1:0]            w_src_fifo_r_stb;
+wire [NUM_ACCEL-1:0]            w_src_fifo_empty;
+wire [NUM_ACCEL-1:0]            w_src_fifo_not_empty;
 
 // Sink FIFO
-wire  [FIFO_DATA_WIDTH - 1:0]   w_sink_fifo_w_data;
-wire                            w_sink_fifo_w_stb;
-wire                            w_sink_fifo_full;
-wire                            w_sink_fifo_not_full;
-wire                            w_sink_fifo_r_last;
+wire  [FIFO_DATA_WIDTH - 1:0]   w_sink_fifo_w_data [NUM_ACCEL-1:0];
+wire [NUM_ACCEL-1:0]            w_sink_fifo_w_stb;
+wire [NUM_ACCEL-1:0]            w_sink_fifo_full;
+wire [NUM_ACCEL-1:0]            w_sink_fifo_not_full;
+wire [NUM_ACCEL-1:0]            w_sink_fifo_r_last;
 
-wire  [FIFO_DATA_WIDTH - 1:0]   w_sink_fifo_r_data;
-wire                            w_sink_fifo_r_stb;
-wire                            w_sink_fifo_empty;
-wire                            w_sink_fifo_not_empty;
+wire  [FIFO_DATA_WIDTH - 1:0]   w_sink_fifo_r_data [NUM_ACCEL-1:0];
+wire  [NUM_ACCEL-1:0]           w_sink_fifo_r_stb;
+wire  [NUM_ACCEL-1:0]           w_sink_fifo_empty;
+wire  [NUM_ACCEL-1:0]           w_sink_fifo_not_empty;
 
 // dtw core ref mem 
-reg [DTW_DATA_WIDTH - 1:0]      w_ref_r_data_0;
-reg [REFMEM_PTR_WIDTH - 1:0]    w_ref_r_addr_0;
-reg [DTW_DATA_WIDTH - 1:0]      w_ref_r_data_1;
-reg [REFMEM_PTR_WIDTH - 1:0]    w_ref_r_addr_1;
+reg [DTW_DATA_WIDTH - 1:0]      w_ref_r_data [NUM_ACCEL-1:0];
+reg [REFMEM_PTR_WIDTH - 1:0]    w_ref_r_addr [NUM_ACCEL-1:0];
 
 // dtw core debug
 wire  [2:0]                     w_dtw_core_state;
@@ -322,61 +323,76 @@ mm2s_packet_filter #(
     .fifo_data          (w_src_fifo_w_data)
 );
 
-fifo #(
-    .DEPTH              (FIFO_DEPTH),
-    .WIDTH              (FIFO_DATA_WIDTH)
-) src_fifo (
-    .clk                (SRC_AXIS_clk),
-    .rst                (w_axis_rst | w_src_fifo_clear),
+generate
+    for (i = 0; i < NUM_ACCEL; i = i + 1) begin
+        fifo #(
+            .DEPTH              (FIFO_DEPTH),
+            .WIDTH              (FIFO_DATA_WIDTH)
+        ) src_fifo (
+            .clk                (SRC_AXIS_clk),
+            .rst                (w_axis_rst | w_src_fifo_clear[i]),
 
-    .i_fifo_w_stb       (w_src_fifo_w_stb),
-    .i_fifo_w_data      (w_src_fifo_w_data),
-    .o_fifo_full        (w_src_fifo_full),
-    .o_fifo_not_full    (w_src_fifo_not_full),
+            .i_fifo_w_stb       (w_src_fifo_w_stb[i]),
+            .i_fifo_w_data      (w_src_fifo_w_data[i]),
+            .o_fifo_full        (w_src_fifo_full[i]),
+            .o_fifo_not_full    (w_src_fifo_not_full[i]),
 
-    .i_fifo_r_stb       (w_src_fifo_r_stb),
-    .o_fifo_r_data      (w_src_fifo_r_data),
-    .o_fifo_empty       (w_src_fifo_empty),
-    .o_fifo_not_empty   (w_src_fifo_not_empty)
-);
+            .i_fifo_r_stb       (w_src_fifo_r_stb[i]),
+            .o_fifo_r_data      (w_src_fifo_r_data[i]),
+            .o_fifo_empty       (w_src_fifo_empty[i]),
+            .o_fifo_not_empty   (w_src_fifo_not_empty[i])
+        );
 
-// DTW core
-dtw_core #(
-    .WIDTH              (DTW_DATA_WIDTH),
-    .AXIS_WIDTH         (AXIS_DATA_WIDTH),
-    .REF_INIT           (0),
-    .REFMEM_PTR_WIDTH   (REFMEM_PTR_WIDTH)
-) dc_0 (
-    .clk                (S_AXI_clk),
-    .rst                (w_dtw_core_rst),
-    .rs                 (w_dtw_core_rs),
+        // DTW core
+        dtw_core #(
+            .WIDTH              (DTW_DATA_WIDTH),
+            .AXIS_WIDTH         (AXIS_DATA_WIDTH),
+            .REF_INIT           (0),
+            .REFMEM_PTR_WIDTH   (REFMEM_PTR_WIDTH)
+        ) dc (
+            .clk                (S_AXI_clk),
+            .rst                (w_dtw_core_rst),
+            .rs                 (w_dtw_core_rs),
 
-    .ref_len            (r_ref_len),
-    .op_mode            (w_dtw_core_mode),
-    .busy               (w_dtw_core_busy),
+            .ref_len            (r_ref_len),
+            .op_mode            (w_dtw_core_mode),
+            .busy               (w_dtw_core_busy[i]),
 
-    .src_fifo_clear     (w_src_fifo_clear),
-    .src_fifo_rden      (w_src_fifo_r_stb),
-    .src_fifo_empty     (w_src_fifo_empty),
-    .src_fifo_data      (w_src_fifo_r_data),
+            .src_fifo_clear     (w_src_fifo_clear[i]),
+            .src_fifo_rden      (w_src_fifo_r_stb[i]),
+            .src_fifo_empty     (w_src_fifo_empty[i]),
+            .src_fifo_data      (w_src_fifo_r_data[i]),
 
-    .sink_fifo_wren     (w_sink_fifo_w_stb),
-    .sink_fifo_full     (w_sink_fifo_full),
-    .sink_fifo_data     (w_sink_fifo_w_data),
-    .sink_fifo_last     (w_sink_fifo_r_last),
+            .sink_fifo_wren     (w_sink_fifo_w_stb[i]),
+            .sink_fifo_full     (w_sink_fifo_full[i]),
+            .sink_fifo_data     (w_sink_fifo_w_data[i]),
+            .sink_fifo_last     (w_sink_fifo_r_last[i]),
 
-    // Ref mem signals
-    .ref_load_done      (w_dtw_core_load_done),
-    .dataout_ref        (w_ref_r_data_0),
-    .addr_ref           (w_ref_r_addr_0),
+            // Ref mem signals
+            .ref_load_done      (w_dtw_core_load_done),
+            .dataout_ref        (w_ref_r_data[i]),
+            .addr_ref           (w_ref_r_addr[i])
+        );
 
-    .dbg_state          (w_dtw_core_state),
-    .dbg_addr_ref       (w_dtw_core_addr_ref),
+        fifo #(
+            .DEPTH              (FIFO_DEPTH),
+            .WIDTH              (FIFO_DATA_WIDTH)
+        ) sink_fifo (
+            .clk                (SRC_AXIS_clk),
+            .rst                (w_axis_rst),
 
-    .dbg_cycle_counter  (w_dtw_core_cycle_counter),
-    .dbg_nquery         (w_dtw_core_nquery),
-    .dbg_curr_qid       (w_dtw_core_curr_qid)
-);
+            .i_fifo_w_stb       (w_sink_fifo_w_stb[i]),
+            .i_fifo_w_data      (w_sink_fifo_w_data[i]),
+            .o_fifo_full        (w_sink_fifo_full[i]),
+            .o_fifo_not_full    (w_sink_fifo_not_full[i]),
+
+            .i_fifo_r_stb       (w_sink_fifo_r_stb[i]),
+            .o_fifo_r_data      (w_sink_fifo_r_data[i]),
+            .o_fifo_empty       (w_sink_fifo_empty[i]),
+            .o_fifo_not_empty   (w_sink_fifo_not_empty[i])
+        );
+    end
+endgenerate
 
 dtw_core_ref #(
     .DATA_WIDTH         (DTW_DATA_WIDTH),
@@ -395,37 +411,20 @@ dtw_core_ref #(
     .ref_load_done_out  (w_dtw_core_load_done),
 
     
-    .src_fifo_clear_out (w_src_fifo_clear),     // Src FIFO Clear signal
-    .src_fifo_rden_out  (w_src_fifo_r_stb),      // Src FIFO Read enable
-    .src_fifo_empty_in  (w_src_fifo_empty),     // Src FIFO Empty
-    .src_fifo_data_in   (w_src_fifo_r_data[DTW_DATA_WIDTH - 1:0]),      // Src FIFO Data
+    .src_fifo_clear_out (w_src_fifo_clear[0]),     // Src FIFO Clear signal
+    .src_fifo_rden_out  (w_src_fifo_r_stb[0]),      // Src FIFO Read enable
+    .src_fifo_empty_in  (w_src_fifo_empty[0]),     // Src FIFO Empty
+    .src_fifo_data_in   (w_src_fifo_r_data[0]),      // Src FIFO Data
 
-    .ref_addr_0_in        (w_ref_r_addr_0),
-    .ref_data_0_out       (w_ref_r_data_0),
-    .ref_addr_1_in        (w_ref_r_addr_1),
-    .ref_data_1_out       (w_ref_r_data_1),
+    //TODO: Parametise this better
+    .ref_addr_0_in        (w_ref_r_addr[0]),
+    .ref_data_0_out       (w_ref_r_data[0]),
+    .ref_addr_1_in        (w_ref_r_addr[1]),
+    .ref_data_1_out       (w_ref_r_data[1]),
 
     .dbg_state          (dbg_dtw_core_ref_state),
     .dbg_addr_ref       (dbg_dtw_core_ref_addr),
     .dbg_wren_ref       (dbg_dtw_core_ref_wren)
-);
-
-fifo #(
-    .DEPTH              (FIFO_DEPTH),
-    .WIDTH              (FIFO_DATA_WIDTH)
-) sink_fifo (
-    .clk                (SRC_AXIS_clk),
-    .rst                (w_axis_rst),
-
-    .i_fifo_w_stb       (w_sink_fifo_w_stb),
-    .i_fifo_w_data      (w_sink_fifo_w_data),
-    .o_fifo_full        (w_sink_fifo_full),
-    .o_fifo_not_full    (w_sink_fifo_not_full),
-
-    .i_fifo_r_stb       (w_sink_fifo_r_stb),
-    .o_fifo_r_data      (w_sink_fifo_r_data),
-    .o_fifo_empty       (w_sink_fifo_empty),
-    .o_fifo_not_empty   (w_sink_fifo_not_empty)
 );
 
 // sink FIFO -> AXIS sink
@@ -445,27 +444,27 @@ fifo #(
 // );
 
 s2mm_packet_filter #(
-    .AXIS_DATA_WIDTH       (32),
-    .FIFO_DATA_WIDTH       (32),
-    .AXIS_KEEP_WIDTH       (AXIS_DATA_WIDTH / 8),
-    .AXIS_DEST_WIDTH       (4),
-    .NUM_CHANNELS          (1)
+    .AXIS_DATA_WIDTH        (32),
+    .FIFO_DATA_WIDTH        (32),
+    .AXIS_KEEP_WIDTH        (AXIS_DATA_WIDTH / 8),
+    .AXIS_DEST_WIDTH        (4),
+    .NUM_CHANNELS           (1)
 ) s2mm_pf (
     .clk_in(SRC_AXIS_clk),
     .rst_in(SRC_AXIS_rst),
 
-    .SINK_AXIS_tready_in(SINK_AXIS_tready),
-    .SINK_AXIS_tdata_out(SINK_AXIS_tdata),
-    .SINK_AXIS_tdest_out(SINK_AXIS_tdest),
-    .SINK_AXIS_tkeep_out(SINK_AXIS_tkeep),
-    .SINK_AXIS_tlast_out(SINK_AXIS_tlast),
-    .SINK_AXIS_tuser_out(SINK_AXIS_tuser),
-    .SINK_AXIS_tvalid_out(SINK_AXIS_tvalid),
+    .SINK_AXIS_tready_in    (SINK_AXIS_tready),
+    .SINK_AXIS_tdata_out    (SINK_AXIS_tdata),
+    .SINK_AXIS_tdest_out    (SINK_AXIS_tdest),
+    .SINK_AXIS_tkeep_out    (SINK_AXIS_tkeep),
+    .SINK_AXIS_tlast_out    (SINK_AXIS_tlast),
+    .SINK_AXIS_tuser_out    (SINK_AXIS_tuser),
+    .SINK_AXIS_tvalid_out   (SINK_AXIS_tvalid),
 
-    .fifo_data_in(w_sink_fifo_r_data),
-    .fifo_not_empty_in(w_sink_fifo_not_empty),
-    .fifo_last_in(w_sink_fifo_r_last),
-    .fifo_r_stb_out(w_sink_fifo_r_stb)
+    .fifo_data_in           (w_sink_fifo_r_data),
+    .fifo_not_empty_in      (w_sink_fifo_not_empty),
+    .fifo_last_in           (w_sink_fifo_r_last),
+    .fifo_r_stb_out         (w_sink_fifo_r_stb)
 );
 
 /* ===============================
@@ -483,12 +482,12 @@ assign w_dtw_core_rst                   = r_control[0];
 assign w_dtw_core_rs                    = r_control[1];
 assign w_dtw_core_mode                  = r_control[2];
 
-assign w_status[0]                      = w_dtw_core_busy;
+assign w_status[0]                      = |w_dtw_core_busy;
 assign w_status[1]                      = w_dtw_core_load_done;
-assign w_status[2]                      = w_src_fifo_empty;
-assign w_status[3]                      = w_src_fifo_full;
-assign w_status[4]                      = w_sink_fifo_empty;
-assign w_status[5]                      = w_sink_fifo_full;
+assign w_status[2]                      = |w_src_fifo_empty;
+assign w_status[3]                      = |w_src_fifo_full;
+assign w_status[4]                      = |w_sink_fifo_empty;
+assign w_status[5]                      = |w_sink_fifo_full;
 assign w_status[8:6]                    = w_dtw_core_state;
 assign w_status[7]                      = w_dtw_core_ref_busy;
 // assign w_status[23:9]                   = w_dtw_core_addrW_ref;
