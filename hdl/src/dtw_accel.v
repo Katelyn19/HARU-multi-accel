@@ -292,18 +292,34 @@ axi_lite_slave #(
 
 
 // AXIS src -> src FIFO
-axis_2_fifo_adapter #(
-    .AXIS_DATA_WIDTH    (AXIS_DATA_WIDTH)
-) a2fa (
-    .i_axis_tuser       (SRC_AXIS_tuser),
-    .i_axis_tvalid      (SRC_AXIS_tvalid),
-    .o_axis_tready      (SRC_AXIS_tready),
-    .i_axis_tlast       (SRC_AXIS_tlast),
-    .i_axis_tdata       (SRC_AXIS_tdata),
+// axis_2_fifo_adapter #(
+//     .AXIS_DATA_WIDTH    (AXIS_DATA_WIDTH)
+// ) a2fa (
+//     .i_axis_tuser       (SRC_AXIS_tuser),
+//     .i_axis_tvalid      (SRC_AXIS_tvalid),
+//     .o_axis_tready      (SRC_AXIS_tready),
+//     .i_axis_tlast       (SRC_AXIS_tlast),
+//     .i_axis_tdata       (SRC_AXIS_tdata),
 
-    .o_fifo_data        (w_src_fifo_w_data),
-    .o_fifo_w_stb       (w_src_fifo_w_stb),
-    .i_fifo_not_full    (w_src_fifo_not_full)
+//     .o_fifo_data        (w_src_fifo_w_data),
+//     .o_fifo_w_stb       (w_src_fifo_w_stb),
+//     .i_fifo_not_full    (w_src_fifo_not_full)
+// );
+
+mm2s_packet_filter #(
+    .AXIS_DATA_WIDTH(32),
+    .FIFO_DATA_WIDTH(32),
+    .AXIS_DEST_WIDTH(4),
+    .NUM_FIFOS(2)
+) mm2s_pf (
+    .SRC_AXIS_tdata     (SRC_AXIS_tdata),
+    .SRC_AXIS_tdest     (SRC_AXIS_tdest),
+    .SRC_AXIS_tvalid    (SRC_AXIS_tvalid),
+    .SRC_AXIS_tready    (SRC_AXIS_tready),
+
+    .fifo_wren          (w_src_fifo_w_stb),
+    .fifo_full          (w_src_fifo_not_full),
+    .fifo_data          (w_src_fifo_w_data)
 );
 
 fifo #(
