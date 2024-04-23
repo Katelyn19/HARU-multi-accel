@@ -310,7 +310,7 @@ mm2s_packet_filter #(
     .AXIS_DATA_WIDTH(32),
     .FIFO_DATA_WIDTH(32),
     .AXIS_DEST_WIDTH(4),
-    .NUM_FIFOS(2)
+    .NUM_FIFOS(1)
 ) mm2s_pf (
     .SRC_AXIS_tdata     (SRC_AXIS_tdata),
     .SRC_AXIS_tdest     (SRC_AXIS_tdest),
@@ -429,19 +429,43 @@ fifo #(
 );
 
 // sink FIFO -> AXIS sink
-fifo_2_axis_adapter #(
-    .AXIS_DATA_WIDTH    (AXIS_DATA_WIDTH)
-)f2aa(
-    .o_fifo_r_stb       (w_sink_fifo_r_stb),
-    .i_fifo_data        (w_sink_fifo_r_data),
-    .i_fifo_not_empty   (w_sink_fifo_not_empty),
-    .i_fifo_last        (w_sink_fifo_r_last),
+// fifo_2_axis_adapter #(
+//     .AXIS_DATA_WIDTH    (AXIS_DATA_WIDTH)
+// )f2aa(
+//     .o_fifo_r_stb       (w_sink_fifo_r_stb),
+//     .i_fifo_data        (w_sink_fifo_r_data),
+//     .i_fifo_not_empty   (w_sink_fifo_not_empty),
+//     .i_fifo_last        (w_sink_fifo_r_last),
 
-    .o_axis_tuser       (SINK_AXIS_tuser),
-    .o_axis_tdata       (SINK_AXIS_tdata),
-    .o_axis_tvalid      (SINK_AXIS_tvalid),
-    .i_axis_tready      (SINK_AXIS_tready),
-    .o_axis_tlast       (SINK_AXIS_tlast)
+//     .o_axis_tuser       (SINK_AXIS_tuser),
+//     .o_axis_tdata       (SINK_AXIS_tdata),
+//     .o_axis_tvalid      (SINK_AXIS_tvalid),
+//     .i_axis_tready      (SINK_AXIS_tready),
+//     .o_axis_tlast       (SINK_AXIS_tlast)
+// );
+
+s2mm_packet_filter #(
+    .AXIS_DATA_WIDTH       (32),
+    .FIFO_DATA_WIDTH       (32),
+    .AXIS_KEEP_WIDTH       (AXIS_DATA_WIDTH / 8),
+    .AXIS_DEST_WIDTH       (4),
+    .NUM_CHANNELS          (1)
+) s2mm_pf (
+    .clk_in(SRC_AXIS_clk),
+    .rst_in(SRC_AXIS_rst),
+
+    .SINK_AXIS_tready_in(SINK_AXIS_tready),
+    .SINK_AXIS_tdata_out(SINK_AXIS_tdata),
+    .SINK_AXIS_tdest_out(SINK_AXIS_tdest),
+    .SINK_AXIS_tkeep_out(SINK_AXIS_tkeep),
+    .SINK_AXIS_tlast_out(SINK_AXIS_tlast),
+    .SINK_AXIS_tuser_out(SINK_AXIS_tuser),
+    .SINK_AXIS_tvalid_out(SINK_AXIS_tvalid),
+
+    .fifo_data_in(w_sink_fifo_r_data),
+    .fifo_not_empty_in(w_sink_fifo_not_empty),
+    .fifo_last_in(w_sink_fifo_r_last),
+    .fifo_r_stb_out(w_sink_fifo_r_stb)
 );
 
 /* ===============================
@@ -471,8 +495,6 @@ assign w_status[7]                      = w_dtw_core_ref_busy;
 // assign w_status[31:24]                  = w_dtw_core_addrR_ref[7:0];
 assign w_status[31:9]                   = 0;
 assign SINK_AXIS_tid [AXIS_ID_WIDTH - 1:0]                      = {AXIS_ID_WIDTH{1'b0}};
-assign SINK_AXIS_tdest [AXIS_DEST_WIDTH - 1:0]                  = {{(AXIS_DEST_WIDTH-1){1'b0}}, 1'b1};
-assign SINK_AXIS_tkeep [AXIS_KEEP_WIDTH - 1:0]                  = {AXIS_KEEP_WIDTH{1'b1}};
 
 /* ===============================
  * synchronous logic
