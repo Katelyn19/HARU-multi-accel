@@ -449,7 +449,7 @@ s2mm_packet_filter #(
     .FIFO_DATA_WIDTH        (32),
     .AXIS_KEEP_WIDTH        (AXIS_DATA_WIDTH / 8),
     .AXIS_DEST_WIDTH        (4),
-    .NUM_CHANNELS           (1)
+    .NUM_CHANNELS           (2)
 ) s2mm_pf (
     .clk_in(SRC_AXIS_clk),
     .rst_in(SRC_AXIS_rst),
