@@ -48,7 +48,7 @@ assign SINK_AXIS_tvalid_out = ^channel_en;
 // data out
 always @(*) begin
     tdata_buf = {AXIS_DATA_WIDTH{1'b0}};
-    for (int i = 0; i < NUM_CHANNELS; i = i + 1) begin
+    for (integer i = 0; i < NUM_CHANNELS; i = i + 1) begin
         tdata_buf[AXIS_DATA_WIDTH-1:0] = (channel_en[i]) ? fifo_data_in[i] : tdata_buf[AXIS_DATA_WIDTH-1:0];
     end
 end
@@ -57,7 +57,7 @@ assign SINK_AXIS_tdata_out = tdata_buf;
 // tdest
 always @(*) begin
     tdest_buf = {AXIS_DEST_WIDTH{1'b0}};
-    for (int i = 0; i < NUM_CHANNELS; i = i + 1) begin
+    for (integer i = 0; i < NUM_CHANNELS; i = i + 1) begin
         tdest_buf[AXIS_DEST_WIDTH-1:0] = (channel_en[i]) ? i[AXIS_DEST_WIDTH-1:0] : tdest_buf;
     end
 end
@@ -66,7 +66,7 @@ assign SINK_AXIS_tdest_out = tdest_buf;
 // tlast
 always @(*) begin
     tlast_buf = 1'b0;
-    for (int i = 0; i < NUM_CHANNELS; i = i + 1) begin
+    for (integer i = 0; i < NUM_CHANNELS; i = i + 1) begin
         tlast_buf = tlast_buf | (channel_en[i] & fifo_last_in[i]);
     end
 end
@@ -107,7 +107,7 @@ always @(posedge clk_in) begin
         channel_shift_reg[NUM_CHANNELS-1:0] <= {{(NUM_CHANNELS-1){1'b0}}, 1'b1};
     end
     else begin
-        if (SINK_AXIS_tready_in && ^|fifo_not_empty_in[NUM_CHANNELS-1:0]) begin
+        if (SINK_AXIS_tready_in && |fifo_not_empty_in[NUM_CHANNELS-1:0]) begin
             if (channel_shift_reg[NUM_CHANNELS-1:0] == {1'b1, {(NUM_CHANNELS-1){1'b0}}}) begin
                 channel_shift_reg[NUM_CHANNELS-1:0] <= {{(NUM_CHANNELS-1){1'b0}}, 1'b1};
             end
