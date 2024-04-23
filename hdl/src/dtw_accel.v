@@ -38,6 +38,8 @@ module dtw_accel #(
     parameter ADDR_WIDTH            = 16,
     parameter DATA_WIDTH            = 32,
     parameter DTW_DATA_WIDTH        = 16,
+    parameter REFMEM_PTR_WIDTH      = 18,
+
 
     parameter AXIS_DATA_WIDTH       = 32,
     parameter AXIS_DEST_WIDTH       = 4,
@@ -160,7 +162,6 @@ localparam  integer ADDR_BITS = 3;
 
 localparam  MAX_ADDR = REG_KEY;
 
-localparam REFMEM_PTR_WIDTH = 18;
 
 /* ===============================
  * registers/wires
