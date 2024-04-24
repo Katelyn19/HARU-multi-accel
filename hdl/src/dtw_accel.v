@@ -466,11 +466,6 @@ s2mm_packet_filter #(
     .fifo_not_empty_in      (w_sink_fifo_not_empty),
     .fifo_last_in           (w_sink_fifo_r_last),
     .fifo_r_stb_out         (w_sink_fifo_r_stb)
-    .o_axis_tuser       (SINK_AXIS_tuser),
-    .o_axis_tdata       (SINK_AXIS_tdata),
-    .o_axis_tvalid      (SINK_AXIS_tvalid),
-    .i_axis_tready      (SINK_AXIS_tready),
-    .o_axis_tlast       (SINK_AXIS_tlast)
 );
 
 /* ===============================
