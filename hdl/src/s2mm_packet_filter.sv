@@ -19,7 +19,7 @@ module s2mm_packet_filter #(
     output wire                             SINK_AXIS_tvalid_out,
 
     // FIFO Peripherals
-    input  wire [FIFO_DATA_WIDTH - 1: 0]    fifo_data_in [NUM_CHANNELS-1:0],
+    input  wire [FIFO_DATA_WIDTH - 1: 0]    fifo_data_in,
     input  wire [NUM_CHANNELS-1:0]          fifo_not_empty_in,
     input  wire [NUM_CHANNELS-1:0]          fifo_last_in,
     output wire [NUM_CHANNELS-1:0]          fifo_r_stb_out

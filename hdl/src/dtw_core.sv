@@ -62,7 +62,7 @@ module dtw_core #(
     // Ref mem signals
     input  wire                                     ref_load_done,
     input  reg  [WIDTH-1:0]                         dataout_ref,
-    output wire [REFMEM_PTR_WIDTH-1: 0]             addr_ref
+    output reg [REFMEM_PTR_WIDTH-1: 0]             addr_ref
 
     // debug signals
     // output  wire [2:0]                              dbg_state,
