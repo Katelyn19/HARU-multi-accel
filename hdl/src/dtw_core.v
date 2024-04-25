@@ -61,7 +61,7 @@ module dtw_core #(
 
     // Ref mem signals
     input  wire                                     ref_load_done,
-    input  reg  [WIDTH-1:0]                         dataout_ref,
+    input  wire  [WIDTH-1:0]                         dataout_ref,
     output wire [REFMEM_PTR_WIDTH-1: 0]             addr_ref,
 
     // debug signals
@@ -101,6 +101,7 @@ wire                dp_done;            // dp core done
 reg  [31:0]         curr_qid;           // Current query id
 wire [WIDTH-1:0]    curr_minval;        // Current minimum value
 wire [31:0]         curr_position;      // Current best match position
+reg [REFMEM_PTR_WIDTH-1:0] addr_ref_reg;
 
 // FSM state
 reg [2:0] r_state;
@@ -135,10 +136,11 @@ dtw_core_datapath #(
  * asynchronous logic
  * =============================== */
 assign src_fifo_clear = r_src_fifo_clear;
+assign addr_ref = addr_ref_reg;
 assign dbg_state = r_state;
 assign dbg_addr_ref = addr_ref;
-assign dbg_nquery = r_dbg_nquery;
 assign dbg_curr_qid = curr_qid;
+assign dbg_nquery = r_dbg_nquery;
 
 /* ===============================
  * synchronous logic
@@ -192,7 +194,7 @@ always @(posedge clk) begin
         busy                <= 0;
         src_fifo_rden       <= 0;
         sink_fifo_wren      <= 0;
-        addr_ref           <= 0;
+        addr_ref_reg           <= 0;
         dp_rst              <= 1;
         dp_running          <= 0;
         stall_counter       <= 0;
@@ -222,10 +224,10 @@ always @(posedge clk) begin
         stall_counter           <= 0;
         r_src_fifo_clear        <= 0;
 
-        if (addr_ref < SQG_SIZE) begin
+        if (addr_ref_reg < SQG_SIZE) begin
             // Query loading
             if (!src_fifo_empty) begin
-                addr_ref       <= addr_ref + 1;
+                addr_ref_reg       <= addr_ref_reg + 1;
                 src_fifo_rden   <= 1;
                 dp_running      <= 1;
             end else begin
@@ -234,7 +236,7 @@ always @(posedge clk) begin
             end
         end else begin
             // Query loaded
-            addr_ref           <= addr_ref + 1;
+            addr_ref_reg           <= addr_ref_reg + 1;
             src_fifo_rden       <= 0;
             dp_running          <= 1;
         end

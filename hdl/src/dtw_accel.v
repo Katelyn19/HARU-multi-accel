@@ -124,11 +124,7 @@ module dtw_accel #(
     output wire                             SINK_AXIS_tlast,
     input  wire                             SINK_AXIS_tready,
     output wire                             SINK_AXIS_tuser,
-    output wire                             SINK_AXIS_tvalid,
-
-    output wire [1:0]                       dbg_dtw_core_ref_state,
-    output wire [REFMEM_PTR_WIDTH - 1:0]    dbg_dtw_core_ref_addr,
-    output wire                             dbg_dtw_core_ref_wren
+    output wire                             SINK_AXIS_tvalid
 );
 
 /* ===============================
@@ -199,14 +195,16 @@ wire                            w_dtw_core_load_done;
 wire                            w_dtw_core_ref_busy;
 
 // Src FIFO
-wire                            w_src_fifo_clear;
+wire                            dtw_w_src_fifo_clear;
+wire                            ref_w_src_fifo_clear;
 wire  [FIFO_DATA_WIDTH - 1:0]   w_src_fifo_w_data;
 wire                            w_src_fifo_w_stb;
 wire                            w_src_fifo_full;
 wire                            w_src_fifo_not_full;
 
 wire  [FIFO_DATA_WIDTH - 1:0]   w_src_fifo_r_data;
-wire                            w_src_fifo_r_stb;
+wire                            dtw_w_src_fifo_r_stb;
+wire                            ref_w_src_fifo_r_stb;
 wire                            w_src_fifo_empty;
 wire                            w_src_fifo_not_empty;
 
@@ -223,10 +221,10 @@ wire                            w_sink_fifo_empty;
 wire                            w_sink_fifo_not_empty;
 
 // dtw core ref mem 
-reg [DTW_DATA_WIDTH - 1:0]      w_ref_r_data_0;
-reg [REFMEM_PTR_WIDTH - 1:0]    w_ref_r_addr_0;
-reg [DTW_DATA_WIDTH - 1:0]      w_ref_r_data_1;
-reg [REFMEM_PTR_WIDTH - 1:0]    w_ref_r_addr_1;
+wire [DTW_DATA_WIDTH - 1:0]      w_ref_r_data_0;
+wire [REFMEM_PTR_WIDTH - 1:0]    w_ref_r_addr_0;
+wire [DTW_DATA_WIDTH - 1:0]      w_ref_r_data_1;
+wire [REFMEM_PTR_WIDTH - 1:0]    w_ref_r_addr_1;
 
 // dtw core debug
 wire  [2:0]                     w_dtw_core_state;
@@ -327,14 +325,14 @@ fifo #(
     .WIDTH              (FIFO_DATA_WIDTH)
 ) src_fifo (
     .clk                (SRC_AXIS_clk),
-    .rst                (w_axis_rst | w_src_fifo_clear),
+    .rst                (w_axis_rst | dtw_w_src_fifo_clear | ref_w_src_fifo_clear),
 
     .i_fifo_w_stb       (w_src_fifo_w_stb),
     .i_fifo_w_data      (w_src_fifo_w_data),
     .o_fifo_full        (w_src_fifo_full),
     .o_fifo_not_full    (w_src_fifo_not_full),
 
-    .i_fifo_r_stb       (w_src_fifo_r_stb),
+    .i_fifo_r_stb       (dtw_w_src_fifo_r_stb | ref_w_src_fifo_r_stb),
     .o_fifo_r_data      (w_src_fifo_r_data),
     .o_fifo_empty       (w_src_fifo_empty),
     .o_fifo_not_empty   (w_src_fifo_not_empty)
@@ -355,8 +353,8 @@ dtw_core #(
     .op_mode            (w_dtw_core_mode),
     .busy               (w_dtw_core_busy),
 
-    .src_fifo_clear     (w_src_fifo_clear),
-    .src_fifo_rden      (w_src_fifo_r_stb),
+    .src_fifo_clear     (dtw_w_src_fifo_clear),
+    .src_fifo_rden      (dtw_w_src_fifo_r_stb),
     .src_fifo_empty     (w_src_fifo_empty),
     .src_fifo_data      (w_src_fifo_r_data),
 
@@ -396,8 +394,8 @@ dtw_core_ref #(
 
     
     .src_fifo_clear_out (w_src_fifo_clear),     // Src FIFO Clear signal
-    .src_fifo_rden_out  (w_src_fifo_r_stb),      // Src FIFO Read enable
-    .src_fifo_empty_in  (w_src_fifo_empty),     // Src FIFO Empty
+    .src_fifo_rden_out  (ref_w_src_fifo_r_stb),      // Src FIFO Read enable
+    .src_fifo_empty_in  (ref_w_src_fifo_empty),     // Src FIFO Empty
     .src_fifo_data_in   (w_src_fifo_r_data[DTW_DATA_WIDTH - 1:0]),      // Src FIFO Data
 
     .ref_addr_0_in        (w_ref_r_addr_0),
@@ -490,7 +488,7 @@ assign w_status[3]                      = w_src_fifo_full;
 assign w_status[4]                      = w_sink_fifo_empty;
 assign w_status[5]                      = w_sink_fifo_full;
 assign w_status[8:6]                    = w_dtw_core_state;
-assign w_status[7]                      = w_dtw_core_ref_busy;
+// assign w_status[7]                      = w_dtw_core_ref_busy;
 // assign w_status[23:9]                   = w_dtw_core_addrW_ref;
 // assign w_status[31:24]                  = w_dtw_core_addrR_ref[7:0];
 assign w_status[31:9]                   = 0;

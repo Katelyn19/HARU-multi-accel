@@ -34,8 +34,8 @@ module dtw_core_ref #(
     // Ref mem signals
     input   wire [REFMEM_PTR_WIDTH-1: 0]            ref_addr_0_in,
     input   wire [REFMEM_PTR_WIDTH-1: 0]            ref_addr_1_in,
-    output  reg  [DATA_WIDTH-1:0]                   ref_data_0_out,
-    output  reg  [DATA_WIDTH-1:0]                   ref_data_1_out,
+    output  wire  [DATA_WIDTH-1:0]                  ref_data_0_out,
+    output  wire  [DATA_WIDTH-1:0]                  ref_data_1_out,
 
     // Debug signals
     output  wire [1:0]                              dbg_state,
@@ -63,6 +63,8 @@ reg                                         ref_load_done;
 reg                                         r_src_fifo_clear;
 reg                                         wren_ref_node_0;           // Write enable for refmem
 reg [REFMEM_PTR_WIDTH-1:0]                  ref_addr_node_0;
+wire [DATA_WIDTH-1:0]                        ref_data_node_0;
+wire [DATA_WIDTH-1:0]                        ref_data_node_1;
 
 // FSM state
 reg [1:0] r_state;
@@ -80,14 +82,14 @@ dtw_core_ref_mem #(
     .clk            (clk_in),
 
     .wen_a          (wren_ref_node_0),
-    .addr_a         (ref_addr_node_0[REFMEM_PTR_WIDTH-1:0]),
+    .addr_a         (ref_addr_0_in[REFMEM_PTR_WIDTH-1:0]),
     .din_a          (src_fifo_data_in),
-    .dout_a         (ref_data_0_out),
+    .dout_a         (ref_data_node_0),
 
     .wen_b          (1'b0),
     .addr_b         (ref_addr_1_in[REFMEM_PTR_WIDTH-1:0]),
     .din_b          ('d0),
-    .dout_b         (ref_data_1_out)
+    .dout_b         (ref_data_node_1)
 );
 
 /* ===============================
@@ -99,6 +101,8 @@ assign dbg_wren_ref = wren_ref_node_0;
 
 assign ref_load_done_out = ref_load_done;
 assign src_fifo_clear_out = r_src_fifo_clear;
+assign ref_data_0_out = ref_data_node_0;
+assign ref_data_1_out = ref_data_node_1;
 
 /* ===============================
  * synchronous logic

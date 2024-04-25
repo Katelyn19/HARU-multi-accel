@@ -79,15 +79,15 @@ always @(posedge clk) begin
         MEM[addr_a] <= din_a;
     end
 
-    if (wen_b) begin
-        MEM[addr_b] <= din_b;
-    end
+    // if (wen_b) begin
+    //     MEM[addr_b] <= din_b;
+    // end
 end
 
 // Read
 always @(posedge clk) begin
     dout_a <= MEM[addr_a];
-    dout_b <= MEM[addr_b];
+    // dout_b <= MEM[addr_b];
 end
 
 endmodule
