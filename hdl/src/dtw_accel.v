@@ -224,7 +224,7 @@ wire                            w_sink_fifo_not_empty;
 
 // dtw core ref mem 
 reg [DTW_DATA_WIDTH - 1:0]      w_ref_r_data;
-reg [REFMEM_PTR_WIDTH - 1:0]    w_ref_r_addr;
+wire [REFMEM_PTR_WIDTH - 1:0]    w_ref_r_addr;
 
 // dtw core debug
 wire  [2:0]                     w_dtw_core_state;

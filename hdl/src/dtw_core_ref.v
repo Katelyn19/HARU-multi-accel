@@ -37,7 +37,7 @@ module dtw_core_ref #(
 
     // Debug signals
     output  wire [1:0]                              dbg_state,
-    output  wire [31:0]                   dbg_addr_ref,
+    output  wire [31:0]                             dbg_addr_ref,
     output  wire                                    dbg_wren_ref
 );
 /* ===============================
