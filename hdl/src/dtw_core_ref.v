@@ -21,7 +21,7 @@ module dtw_core_ref #(
     input   wire                                    rst_in,
     input   wire                                    rs_in,                  // Run: 1, Stop: 0
     input   wire                                    op_mode_in,
-    input   wire [ADDR_WIDTH-1: 0]                 ref_len_in,
+    input   wire [ADDR_WIDTH-1: 0]                  ref_len_in,
     output  reg                                     busy_out,               // Idle: 0, busy: 1
     output  wire                                    ref_load_done_out,
 

@@ -337,7 +337,7 @@ dtw_core #(
     .op_mode            (w_dtw_core_mode),
     .busy               (w_dtw_core_busy),
 
-    .src_fifo_clear     (w_src_fifo_clear),
+    // .src_fifo_clear     (w_src_fifo_clear),
     .src_fifo_rden      (w_src_fifo_r_stb),
     .src_fifo_empty     (w_src_fifo_empty),
     .src_fifo_data      (w_src_fifo_r_data),

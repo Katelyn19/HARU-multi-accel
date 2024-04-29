@@ -48,7 +48,7 @@ module dtw_core #(
     output  reg                     busy,               // Idle: 0, busy: 1
 
     // Src FIFO signals
-    output  wire                    src_fifo_clear,     // Src FIFO Clear signal
+    // output  wire                    src_fifo_clear,     // Src FIFO Clear signal
     output  reg                     src_fifo_rden,      // Src FIFO Read enable
     input   wire                    src_fifo_empty,     // Src FIFO Empty
     input   wire [31:0]             src_fifo_data,      // Src FIFO Data
@@ -134,7 +134,7 @@ dtw_core_datapath #(
 /* ===============================
  * asynchronous logic
  * =============================== */
-assign src_fifo_clear = r_src_fifo_clear;
+// assign src_fifo_clear = r_src_fifo_clear;
 assign dbg_state = r_state;
 assign dbg_addr_ref = addr_ref;
 assign dbg_nquery = r_dbg_nquery;
