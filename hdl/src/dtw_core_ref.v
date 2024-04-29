@@ -33,11 +33,11 @@ module dtw_core_ref #(
 
     // Ref mem signals
     input   wire [REFMEM_PTR_WIDTH-1: 0]            ref_addr_in,
-    output  reg  [DATA_WIDTH-1:0]                   ref_data_out,
+    output  wire  [DATA_WIDTH-1:0]                   ref_data_out,
 
     // Debug signals
     output  wire [1:0]                              dbg_state,
-    output  wire [31:0]                             dbg_addr_ref,
+    output  wire [31:0]                   dbg_addr_ref,
     output  wire                                    dbg_wren_ref
 );
 /* ===============================
@@ -61,6 +61,7 @@ reg                                         ref_load_done;
 reg                                         r_src_fifo_clear;
 reg                                         wren_ref_node;           // Write enable for refmem
 reg [REFMEM_PTR_WIDTH-1:0]                  ref_addr_node;
+wire [DATA_WIDTH-1:0]                       ref_data_node;
 
 // FSM state
 reg [1:0] r_state;
@@ -80,7 +81,7 @@ dtw_core_ref_mem #(
     .wen          (wren_ref_node),
     .addr         (ref_addr_node[REFMEM_PTR_WIDTH-1:0]),
     .din          (src_fifo_data_in),
-    .dout         (ref_data_out)
+    .dout         (ref_data_node)
 );
 
 /* ===============================
@@ -92,6 +93,7 @@ assign dbg_wren_ref = wren_ref_node;
 
 assign ref_load_done_out = ref_load_done;
 assign src_fifo_clear_out = r_src_fifo_clear;
+assign ref_data_out = ref_data_node;
 
 /* ===============================
  * synchronous logic
@@ -179,6 +181,7 @@ always @(posedge clk_in) begin
             ref_addr_node <= 'd0;
         end else begin
             ref_addr_node <= ref_addr_in;
+            
         end
     end
     endcase

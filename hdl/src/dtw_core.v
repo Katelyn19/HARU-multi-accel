@@ -61,8 +61,8 @@ module dtw_core #(
 
     // Ref mem signals
     input  wire                                     ref_load_done,
-    input  reg  [WIDTH-1:0]                         dataout_ref,
-    output wire [REFMEM_PTR_WIDTH-1: 0]             addr_ref,
+    input  wire  [WIDTH-1:0]                        ref_data_in,
+    output wire [REFMEM_PTR_WIDTH-1: 0]             ref_addr_out,
 
     // debug signals
     output  wire [2:0]                              dbg_state,
@@ -109,6 +109,10 @@ reg [2:0] r_state;
 reg [1:0] stall_counter;
 reg [31:0] r_dbg_nquery;
 
+// Ref Core signals
+wire [WIDTH-1:0] dataout_ref;
+reg [REFMEM_PTR_WIDTH-1: 0] addr_ref;
+
 /* ===============================
  * submodules
  * =============================== */
@@ -139,6 +143,10 @@ assign dbg_state = r_state;
 assign dbg_addr_ref = addr_ref;
 assign dbg_nquery = r_dbg_nquery;
 assign dbg_curr_qid = curr_qid;
+
+// Ref Core
+assign dataout_ref = ref_data_in;
+assign ref_addr_out = addr_ref;
 
 /* ===============================
  * synchronous logic

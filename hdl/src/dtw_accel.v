@@ -223,7 +223,7 @@ wire                            w_sink_fifo_empty;
 wire                            w_sink_fifo_not_empty;
 
 // dtw core ref mem 
-reg [DTW_DATA_WIDTH - 1:0]      w_ref_r_data;
+wire [DTW_DATA_WIDTH - 1:0]      w_ref_r_data;
 wire [REFMEM_PTR_WIDTH - 1:0]    w_ref_r_addr;
 
 // dtw core debug
@@ -349,8 +349,8 @@ dtw_core #(
 
     // Ref mem signals
     .ref_load_done      (w_dtw_core_load_done),
-    .dataout_ref        (w_ref_r_data),
-    .addr_ref           (w_ref_r_addr),
+    .ref_data_in        (w_ref_r_data),
+    .ref_addr_out       (w_ref_r_addr),
 
     .dbg_state          (w_dtw_core_state),
     .dbg_addr_ref       (w_dtw_core_addr_ref),
