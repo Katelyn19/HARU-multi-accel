@@ -186,6 +186,15 @@ always @(posedge clk_in) begin
             
         end
     end
+
+    default: begin
+        busy_out <= 1'b0;
+        src_fifo_rden_out <= 1'b0;
+        wren_ref_node <= 1'b0;
+        r_src_fifo_clear <= 1'b0;
+        ref_load_done <= 1'b0;
+        ref_addr_node <= 'd0;
+    end
     endcase
 end
 endmodule;
