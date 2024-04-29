@@ -450,7 +450,7 @@ assign w_status[3]                      = w_src_fifo_full;
 assign w_status[4]                      = w_sink_fifo_empty;
 assign w_status[5]                      = w_sink_fifo_full;
 assign w_status[8:6]                    = w_dtw_core_state;
-// assign w_status[7]                      = w_dtw_core_ref_busy;
+assign w_status[7]                      = w_dtw_core_ref_busy;
 // assign w_status[23:9]                   = w_dtw_core_addrW_ref;
 // assign w_status[31:24]                  = w_dtw_core_addrR_ref[7:0];
 assign w_status[31:9]                   = 0;
@@ -542,7 +542,7 @@ always @ (posedge S_AXI_clk) begin
                 r_reg_out_data <= w_dtw_core_cycle_counter;
             end
             REG_CORE_REF_ADDR: begin
-                r_reg_out_data <= {12'h0, w_dtw_core_addr_ref};
+                r_reg_out_data <= {{(32-REFMEM_PTR_WIDTH){1'b0}}, w_dtw_core_addr_ref};
             end
             REG_NQUERY: begin
                 r_reg_out_data <= w_dtw_core_nquery;
