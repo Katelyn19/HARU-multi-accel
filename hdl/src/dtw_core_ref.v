@@ -37,7 +37,7 @@ module dtw_core_ref #(
 
     // Debug signals
     output  wire [1:0]                              dbg_state,
-    output  wire [REFMEM_PTR_WIDTH-1: 0]            dbg_addr_ref,
+    output  wire [ADDR_WIDTH-1:0]                   dbg_addr_ref,
     output  wire                                    dbg_wren_ref
 );
 /* ===============================
@@ -87,7 +87,7 @@ dtw_core_ref_mem #(
  * asynchronous logic
  * =============================== */
 assign dbg_state = r_state;
-assign dbg_addr_ref = ref_addr_node;
+assign dbg_addr_ref = {{(ADDR_WIDTH-REFMEM_PTR_WIDTH){1'b0}},{ref_addr_node}};
 assign dbg_wren_ref = wren_ref_node;
 
 assign ref_load_done_out = ref_load_done;

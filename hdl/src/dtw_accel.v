@@ -127,7 +127,7 @@ module dtw_accel #(
     output wire                             SINK_AXIS_tvalid,
 
     output wire [1:0]                       dbg_dtw_core_ref_state,
-    output wire [REFMEM_PTR_WIDTH - 1:0]    dbg_dtw_core_ref_addr,
+    output wire [ADDR_WIDTH - 1:0]          dbg_dtw_core_ref_addr,
     output wire                             dbg_dtw_core_ref_wren
 );
 
