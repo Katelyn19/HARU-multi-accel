@@ -187,6 +187,7 @@ reg   [DATA_WIDTH - 1 : 0]      r_dbg_ref_addr;
 reg   [DATA_WIDTH - 1 : 0]      r_dbg_ref_din;
 wire  [DATA_WIDTH - 1 : 0]      w_dbg_ref_dout;
 wire  [DATA_WIDTH - 1 : 0]      w_dtw_core_cycle_counter;
+wire                            w_dtw_fifo_r_stb;
 
 // Control Register bits
 wire                            w_dtw_core_rst;
@@ -225,6 +226,7 @@ wire                            w_sink_fifo_not_empty;
 // dtw core ref mem 
 wire [DTW_DATA_WIDTH - 1:0]      w_ref_r_data;
 wire [REFMEM_PTR_WIDTH - 1:0]    w_ref_r_addr;
+wire                            w_ref_fifo_r_stb;
 
 // dtw core debug
 wire  [2:0]                     w_dtw_core_state;
@@ -338,7 +340,7 @@ dtw_core #(
     .busy               (w_dtw_core_busy),
 
     // .src_fifo_clear     (w_src_fifo_clear),
-    .src_fifo_rden      (w_src_fifo_r_stb),
+    .src_fifo_rden      (w_dtw_fifo_r_stb),
     .src_fifo_empty     (w_src_fifo_empty),
     .src_fifo_data      (w_src_fifo_r_data),
 
@@ -378,7 +380,7 @@ dtw_core_ref #(
 
     
     .src_fifo_clear_out (w_src_fifo_clear),     // Src FIFO Clear signal
-    .src_fifo_rden_out  (w_src_fifo_r_stb),      // Src FIFO Read enable
+    .src_fifo_rden_out  (w_ref_fifo_r_stb),      // Src FIFO Read enable
     .src_fifo_empty_in  (w_src_fifo_empty),     // Src FIFO Empty
     .src_fifo_data_in   (w_src_fifo_r_data[DTW_DATA_WIDTH - 1:0]),      // Src FIFO Data
 
@@ -438,6 +440,8 @@ assign w_key                            = 32'h0ca7cafe;
 assign w_dtw_core_rst                   = r_control[0];
 assign w_dtw_core_rs                    = r_control[1];
 assign w_dtw_core_mode                  = r_control[2];
+
+assign w_src_fifo_r_stb = w_ref_fifo_r_stb | w_dtw_fifo_r_stb;
 
 assign w_status[0]                      = w_dtw_core_busy;
 assign w_status[1]                      = w_dtw_core_load_done;

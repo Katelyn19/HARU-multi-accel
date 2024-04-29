@@ -37,7 +37,7 @@ module dtw_core_ref #(
 
     // Debug signals
     output  wire [1:0]                              dbg_state,
-    output  wire [31:0]                   dbg_addr_ref,
+    output  wire [31:0]                             dbg_addr_ref,
     output  wire                                    dbg_wren_ref
 );
 /* ===============================
@@ -143,6 +143,7 @@ always @(posedge clk_in) begin
         src_fifo_rden_out <= 1'b0;
         wren_ref_node <= 1'b0;
         r_src_fifo_clear <= 1'b1;
+        ref_load_done <= ref_load_done;
 
         if (op_mode_in == MODE_DTW_READ) begin
             ref_addr_node <= ref_addr_in;
@@ -176,6 +177,7 @@ always @(posedge clk_in) begin
         src_fifo_rden_out <= 1'b0;
         wren_ref_node <= 1'b0;
         r_src_fifo_clear <= 1'b0;
+        ref_load_done <= ref_load_done;
 
         if (op_mode_in == MODE_LOAD_REF) begin
             ref_addr_node <= 'd0;
