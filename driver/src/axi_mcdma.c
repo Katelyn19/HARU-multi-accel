@@ -409,7 +409,8 @@ int axi_mcdma_haru_query_transfer(axi_mcdma_t *device, int channel_idx, uint32_t
 
 void mcdma_config_mm2s_channel(axi_mcdma_t *device, int channel_idx) {
 	// Set current descriptor
-	_reg_set(device->v_baseaddr, (AXI_MCDMA_MM2S_CHCURDESC_LSB + AXI_MCDMA_CH_OFFSET*channel_idx), device->channels[channel_idx]->mm2s_curr_bd_addr);
+	// _reg_set(device->v_baseaddr, (AXI_MCDMA_MM2S_CHCURDESC_LSB + AXI_MCDMA_CH_OFFSET*channel_idx), device->channels[channel_idx]->mm2s_curr_bd_addr);
+	_reg_set(device->v_baseaddr, AXI_MCDMA_MM2S_CHCURDESC_LSB, device->channels[channel_idx]->mm2s_curr_bd_addr);
 	// Channel fetch bit
 	_reg_set(device->v_baseaddr, (AXI_MCDMA_MM2S_CHCR + AXI_MCDMA_CH_OFFSET*channel_idx), AXI_MCDMA_MM2S_CHRS);
 
