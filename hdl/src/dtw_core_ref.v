@@ -137,64 +137,65 @@ end
 
 // FSM output
 always @(posedge clk_in) begin
-    case (r_state)
-    IDLE: begin
+    if (rst_in) begin
         busy_out <= 1'b0;
         src_fifo_rden_out <= 1'b0;
         wren_ref_node <= 1'b0;
         r_src_fifo_clear <= 1'b1;
-        ref_load_done <= ref_load_done;
-
-        if (op_mode_in == MODE_DTW_READ) begin
-            ref_addr_node <= ref_addr_in;
-        end else begin
-            ref_addr_node <= 'd0;
-        end
-    end
-
-    REF_LOAD: begin
-        busy_out <= 1'b1;
-        src_fifo_rden_out <= 1'b1;
-        r_src_fifo_clear <= 1'b0;
-
-        if (!src_fifo_empty_in && src_fifo_rden_out) begin
-            ref_addr_node <= ref_addr_node + 1'b1;
-            wren_ref_node <= 1'b1;
-        end else begin
-            wren_ref_node <= 1'b0;
-            ref_addr_node <= ref_addr_node;
-        end
-
-        if (!(src_fifo_empty_in) && (ref_addr_node[REFMEM_PTR_WIDTH-1:0] == (ref_len_in[REFMEM_PTR_WIDTH-1:0] - 1'b1))) begin
-            ref_load_done <= 1'b1;
-        end else begin
-            ref_load_done <= 1'b0;
-        end
-    end
-
-    DTW_READ: begin
-        busy_out <= 1'b1;
-        src_fifo_rden_out <= 1'b0;
-        wren_ref_node <= 1'b0;
-        r_src_fifo_clear <= 1'b0;
-        ref_load_done <= ref_load_done;
-
-        if (op_mode_in == MODE_LOAD_REF) begin
-            ref_addr_node <= 'd0;
-        end else begin
-            ref_addr_node <= ref_addr_in;
-            
-        end
-    end
-
-    default: begin
-        busy_out <= 1'b0;
-        src_fifo_rden_out <= 1'b0;
-        wren_ref_node <= 1'b0;
-        r_src_fifo_clear <= 1'b0;
-        ref_load_done <= 1'b0;
         ref_addr_node <= 'd0;
+        ref_load_done <= 1'b0;
     end
-    endcase
+    else begin
+        case (r_state)
+        IDLE: begin
+            busy_out <= 1'b0;
+            src_fifo_rden_out <= 1'b0;
+            wren_ref_node <= 1'b0;
+            r_src_fifo_clear <= 1'b1;
+            ref_load_done <= ref_load_done;
+
+            if (op_mode_in == MODE_DTW_READ) begin
+                ref_addr_node <= ref_addr_in;
+            end else begin
+                ref_addr_node <= 'd0;
+            end
+        end
+
+        REF_LOAD: begin
+            busy_out <= 1'b1;
+            src_fifo_rden_out <= 1'b1;
+            r_src_fifo_clear <= 1'b0;
+
+            if (!src_fifo_empty_in && src_fifo_rden_out) begin
+                ref_addr_node <= ref_addr_node + 1'b1;
+                wren_ref_node <= 1'b1;
+            end else begin
+                wren_ref_node <= 1'b0;
+                ref_addr_node <= ref_addr_node;
+            end
+
+            // Load done is asserted on the same cycle that the last word is transferred.
+            if (!(src_fifo_empty_in) && (ref_addr_node[REFMEM_PTR_WIDTH-1:0] == (ref_len_in[REFMEM_PTR_WIDTH-1:0] - 1'b1)) || (ref_addr_node[REFMEM_PTR_WIDTH-1:0] == ref_len_in[REFMEM_PTR_WIDTH-1:0])) begin
+                ref_load_done <= 1'b1;
+            end else begin
+                ref_load_done <= 1'b0;
+            end
+        end
+
+        DTW_READ: begin
+            busy_out <= 1'b1;
+            src_fifo_rden_out <= 1'b0;
+            wren_ref_node <= 1'b0;
+            r_src_fifo_clear <= 1'b0;
+            ref_load_done <= ref_load_done;
+
+            if (op_mode_in == MODE_LOAD_REF) begin
+                ref_addr_node <= 'd0;
+            end else begin
+                ref_addr_node <= ref_addr_in;
+            end
+        end
+        endcase
+    end
 end
 endmodule;
