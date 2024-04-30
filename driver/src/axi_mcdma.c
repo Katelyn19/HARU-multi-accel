@@ -206,8 +206,7 @@ void axi_mcdma_s2mm_bd_init(axi_mcdma_t *device, int channel_idx, uint32_t trans
 	channel->s2mm_curr_bd_addr = device->p_s2mm_bd_addr + bd_addr_offset;
 	channel->s2mm_tail_bd_addr = device->p_s2mm_bd_addr + bd_addr_offset;
 	s2mm_bd->p_bd_addr = device->p_s2mm_bd_addr + bd_addr_offset;
-	s2mm_bd->v_bd_addr = device->v_s2mm_bd_addr;
-	*s2mm_bd->v_bd_addr += bd_addr_offset;
+	s2mm_bd->v_bd_addr = device->v_s2mm_bd_addr + bd_addr_offset;
 
 	s2mm_bd->next_mcdma_bd = NULL;
 	s2mm_bd->next_bd_addr = channel->s2mm_tail_bd_addr;

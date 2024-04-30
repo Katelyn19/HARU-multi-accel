@@ -444,7 +444,7 @@ assign w_dtw_core_mode                  = r_control[2];
 
 assign w_src_fifo_r_stb = w_ref_fifo_r_stb | w_dtw_fifo_r_stb;
 
-assign w_status[0]                      = w_dtw_core_busy;
+assign w_status[0]                      = w_dtw_core_busy | w_dtw_core_ref_busy;
 assign w_status[1]                      = w_dtw_core_load_done;
 assign w_status[2]                      = w_src_fifo_empty;
 assign w_status[3]                      = w_src_fifo_full;

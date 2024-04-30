@@ -106,7 +106,7 @@ always @(posedge clk_in) begin
         case (r_state)
         IDLE: begin
             if (rs_in) begin
-                if (op_mode_in == MODE_DTW_READ) begin
+                if (op_mode_in == MODE_DTW_READ && ref_load_done == 1) begin
                     r_state <= DTW_READ;
                 end else if (op_mode_in == MODE_LOAD_REF && ref_load_done == 0) begin
                     r_state <= REF_LOAD;
@@ -121,6 +121,8 @@ always @(posedge clk_in) begin
         REF_LOAD: begin
             if (ref_addr_node[REFMEM_PTR_WIDTH-1:0] < ref_len_in[REFMEM_PTR_WIDTH-1:0]) begin
                 r_state <= REF_LOAD;
+            end else if (op_mode_in == MODE_DTW_READ) begin
+                r_state <= DTW_READ;
             end else begin
                 r_state <= IDLE;
             end
@@ -151,7 +153,6 @@ always @(posedge clk_in) begin
             busy_out <= 1'b0;
             src_fifo_rden_out <= 1'b0;
             wren_ref_node <= 1'b0;
-            r_src_fifo_clear <= 1'b1;
             ref_load_done <= ref_load_done;
 
             if (op_mode_in == MODE_DTW_READ) begin
@@ -174,8 +175,7 @@ always @(posedge clk_in) begin
                 ref_addr_node <= ref_addr_node;
             end
 
-            // Load done is asserted on the same cycle that the last word is transferred.
-            if (!(src_fifo_empty_in) && (ref_addr_node[REFMEM_PTR_WIDTH-1:0] == (ref_len_in[REFMEM_PTR_WIDTH-1:0] - 1'b1)) || (ref_addr_node[REFMEM_PTR_WIDTH-1:0] == ref_len_in[REFMEM_PTR_WIDTH-1:0])) begin
+            if (ref_addr_node[REFMEM_PTR_WIDTH-1:0] >= ref_len_in[REFMEM_PTR_WIDTH-1:0]) begin
                 ref_load_done <= 1'b1;
             end else begin
                 ref_load_done <= 1'b0;
