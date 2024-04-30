@@ -128,7 +128,8 @@ module dtw_accel #(
 
     output wire [1:0]                       dbg_dtw_core_ref_state,
     output wire [31:0]                      dbg_dtw_core_ref_addr,
-    output wire                             dbg_dtw_core_ref_wren
+    output wire                             dbg_dtw_core_ref_wren,
+    output wire                             dbg_sink_fifo_full
 );
 
 /* ===============================
@@ -458,6 +459,9 @@ assign w_status[31:9]                   = 0;
 assign SINK_AXIS_tid [AXIS_ID_WIDTH - 1:0]                      = {AXIS_ID_WIDTH{1'b0}};
 assign SINK_AXIS_tdest [AXIS_DEST_WIDTH - 1:0]                  = {{(AXIS_DEST_WIDTH-1){1'b0}}, 1'b1};
 assign SINK_AXIS_tkeep [AXIS_KEEP_WIDTH - 1:0]                  = {AXIS_KEEP_WIDTH{1'b1}};
+
+// debug
+assign dbg_sink_fifo_full = w_sink_fifo_full;
 
 /* ===============================
  * synchronous logic
