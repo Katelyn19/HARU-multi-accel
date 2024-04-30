@@ -373,7 +373,7 @@ int axi_mcdma_haru_query_transfer(axi_mcdma_t *device, int channel_idx, uint32_t
 
 	/* mm2s setup */
 	// mm2s bd config
-	axi_mcdma_mm2s_bd_init(device, 0, src_len, 0);
+	axi_mcdma_mm2s_bd_init(device, channel_idx, src_len, 0);
 	_reg_set(device->v_baseaddr, AXI_MCDMA_MM2S_CHEN, device->channel_en);
 	HARU_LOG("reg@0x%03x : 0x%08x (channel enable)", AXI_MCDMA_MM2S_CHEN, device->channel_en);
 	mcdma_config_mm2s_channel(device, channel_idx);
@@ -485,6 +485,9 @@ int mcdma_s2mm_busy_wait(axi_mcdma_t *device) {
 	uint32_t s2mm_sr = _reg_get(device->v_baseaddr, AXI_MCDMA_S2MM_CSR);
 	while (!(s2mm_sr & AXI_MCDMA_S2MM_IDLE) && !(s2mm_sr & AXI_MCDMA_S2MM_HALTED)) {
 		s2mm_sr = _reg_get(device->v_baseaddr, AXI_MCDMA_S2MM_CSR);
+		// s2mm_common_status(device);
+		// s2mm_channel_status(device);
+		// s2mm_bd_status(device->channels[0]);
 	}
 
 	if (s2mm_sr & AXI_MCDMA_S2MM_HALTED) {
