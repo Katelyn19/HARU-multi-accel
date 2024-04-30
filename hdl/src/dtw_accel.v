@@ -457,7 +457,7 @@ assign w_status[7]                      = 1'b0;
 // assign w_status[31:24]                  = w_dtw_core_addrR_ref[7:0];
 assign w_status[31:9]                   = 0;
 assign SINK_AXIS_tid [AXIS_ID_WIDTH - 1:0]                      = {AXIS_ID_WIDTH{1'b0}};
-assign SINK_AXIS_tdest [AXIS_DEST_WIDTH - 1:0]                  = {{(AXIS_DEST_WIDTH-1){1'b0}}, 1'b1};
+assign SINK_AXIS_tdest [AXIS_DEST_WIDTH - 1:0]                  = {{(AXIS_DEST_WIDTH-1){1'b0}}, 1'b0};
 assign SINK_AXIS_tkeep [AXIS_KEEP_WIDTH - 1:0]                  = {AXIS_KEEP_WIDTH{1'b1}};
 
 // debug
