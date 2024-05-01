@@ -227,8 +227,10 @@ wire                            w_dtw_src_fifo_r_stb;
 wire                            w_ref_src_fifo_r_stb;
 wire                            w_dtw_src_fifo_clear;
 wire                            w_ref_src_fifo_clear;
-wire [REFMEM_PTR_WIDTH - 1:0]   dtw_addr_node;
-wire [DATA_WIDTH - 1 :0]             dtw_ref_data_node;
+wire [REFMEM_PTR_WIDTH - 1:0]   w_dtw_ref_addr;
+wire [DATA_WIDTH - 1 :0]        w_dtw_ref_data;
+wire                            w_dtw_ref_busy;
+wire                            w_dtw_core_done;
 
 // dtw core debug
 wire  [2:0]                     w_dtw_core_state;
@@ -343,9 +345,9 @@ dtw_core #(
     .busy               (w_dtw_core_busy),
 
     .load_done          (w_dtw_core_load_done),
-    .ref_data           (),
-    .dtw_done           (),
-    .addr_ref           (),
+    .ref_data           (w_dtw_ref_data),
+    .dtw_done           (w_dtw_core_done),
+    .addr_ref           (w_dtw_ref_addr),
 
     .src_fifo_clear     (w_src_fifo_clear),
     .src_fifo_rden      (w_src_fifo_r_stb),
@@ -382,11 +384,11 @@ dtw_ref #(
 
     .ref_len_in         (r_ref_len),
     .op_mode_in         (w_dtw_core_mode),            // Reference mode: 0, query mode: 1
-    .busy_out           (),               // Idle: 0, busy_out: 1
+    .busy_out           (w_dtw_ref_busy),               // Idle: 0, busy_out: 1
 
-    .dtw_done_in        (),
-    .dtw_read_addr_in   (),
-    .ref_data_out       (),
+    .dtw_done_in        (w_dtw_core_done),
+    .dtw_read_addr_in   (w_dtw_ref_addr),
+    .ref_data_out       (w_dtw_ref_data),
     .load_done_out      (w_dtw_core_load_done),
 
     .src_fifo_clear_out (w_ref_src_fifo_clear),
