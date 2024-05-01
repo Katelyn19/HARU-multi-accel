@@ -74,6 +74,7 @@ void haru_process_query(haru_t *haru, int32_t *query, uint32_t size, search_resu
 
 int haru_multi_accel_init(haru_t *haru);
 int haru_multi_accel_load_reference(haru_t *haru, int32_t *ref, uint32_t size);
-void haru_multi_accel_process_query(haru_t *haru, int32_t *query, uint32_t size, search_result_t *results);
+void haru_multi_accel_process_query(haru_t *haru, int32_t *query, uint32_t size, int channel_idx);
+int32_t haru_multi_accel_get_results(haru_t *haru, int channel_idx, search_result_t *results);
 
 #endif // HARU_H

@@ -191,15 +191,25 @@ void haru_process_query(haru_t *haru, int32_t *query, uint32_t size, search_resu
     memcpy(results, haru->axi_dma.v_dst_addr, sizeof(search_result_t));
 }
 
-void haru_multi_accel_process_query(haru_t *haru, int32_t *query, uint32_t size, search_result_t *results) {
+void haru_multi_accel_process_query(haru_t *haru, int32_t *query, uint32_t size, int channel_idx) {
     // Copy query into src buffer
-    memset((void *)haru->axi_mcdma.v_buffer_src_addr, 0, 0xffff);
-    memcpy(haru->axi_mcdma.v_buffer_src_addr, query, size * sizeof(int32_t));
-    memset(haru->axi_mcdma.v_buffer_dst_addr, 0, 0xffff);
+    memset((void *) haru->axi_mcdma.v_buffer_src_addr, 0, 0xffff);
+    memcpy((void *) haru->axi_mcdma.v_buffer_src_addr, (void *) query, size * sizeof(int32_t));
+    memset((void *) haru->axi_mcdma.v_buffer_dst_addr, 0, 0xffff);
 
     dtw_accel_set_mode(&haru->dtw_accel, DTW_ACCEL_MODE_QUERY);
-    axi_mcdma_haru_query_transfer(&haru->axi_mcdma, 0, size * sizeof(int32_t), sizeof(search_result_t));
-    memcpy(results, haru->axi_mcdma.v_buffer_dst_addr, sizeof(search_result_t));
+    axi_mcdma_haru_query_transfer(&haru->axi_mcdma, channel_idx, size * sizeof(int32_t), sizeof(search_result_t));
+}
+
+int32_t haru_multi_accel_get_results(haru_t *haru, int channel_idx, search_result_t *results) {
+    int32_t res = mcdma_s2mm_busy_wait(&haru->axi_mcdma);
+    if (res) {
+        HARU_ERROR("Could not retrieve results for channel %d.", channel_idx);
+        return -1;
+    }
+
+    memcpy(results, (void *) haru->axi_mcdma.channels[channel_idx]->v_buf_dst_addr, sizeof(search_result_t));
+    return 0;
 }
 
 void haru_multi_accel_free(haru_t *haru) {

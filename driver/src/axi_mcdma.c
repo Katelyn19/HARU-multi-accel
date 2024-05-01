@@ -359,9 +359,11 @@ int axi_mcdma_haru_query_transfer(axi_mcdma_t *device, int channel_idx, uint32_t
 	s2mm_common_status(device);
 	s2mm_channel_status(device);
 
+	axi_mcdma_channel_init(device, channel_idx, channel_idx*AXI_MCDMA_BUF_OFFSET, channel_idx*AXI_MCDMA_BUF_OFFSET, AXI_MCDMA_BUF_OFFSET);
+
 	/* s2mm setup */
 	// s2mm bd config
-	axi_mcdma_s2mm_bd_init(device, channel_idx, dst_len, 0);
+	axi_mcdma_s2mm_bd_init(device, channel_idx, dst_len, channel_idx*AXI_MCDMA_BD_OFFSET);
 	_reg_set(device->v_baseaddr, AXI_MCDMA_S2MM_CHEN, device->channel_en);
 	HARU_LOG("reg@0x%03x : 0x%08x (channel enable)", AXI_MCDMA_S2MM_CHEN, device->channel_en);
 	mcdma_config_s2mm_channel(device, channel_idx);
@@ -372,7 +374,7 @@ int axi_mcdma_haru_query_transfer(axi_mcdma_t *device, int channel_idx, uint32_t
 
 	/* mm2s setup */
 	// mm2s bd config
-	axi_mcdma_mm2s_bd_init(device, channel_idx, src_len, 0);
+	axi_mcdma_mm2s_bd_init(device, channel_idx, src_len, channel_idx*AXI_MCDMA_BD_OFFSET);
 	_reg_set(device->v_baseaddr, AXI_MCDMA_MM2S_CHEN, device->channel_en);
 	HARU_LOG("reg@0x%03x : 0x%08x (channel enable)", AXI_MCDMA_MM2S_CHEN, device->channel_en);
 	mcdma_config_mm2s_channel(device, channel_idx);
@@ -390,17 +392,17 @@ int axi_mcdma_haru_query_transfer(axi_mcdma_t *device, int channel_idx, uint32_t
 	HARU_LOG("%s", "mm2s query transfer done.");
 	mm2s_common_status(device);
 	mm2s_channel_status(device);
-	mm2s_bd_status(device->channels[0]);
+	mm2s_bd_status(device->channels[channel_idx]);
 
-	res = mcdma_s2mm_busy_wait(device);
-	if (res) {
-		HARU_ERROR("%s", "s2mm query transfer failed.");
-		return -1;
-	}
-	HARU_LOG("%s", "s2mm query transfer done.");
+	// res = mcdma_s2mm_busy_wait(device);
+	// if (res) {
+	// 	HARU_ERROR("%s", "s2mm query transfer failed.");
+	// 	return -1;
+	// }
+	// HARU_LOG("%s", "s2mm query transfer done.");
 	s2mm_common_status(device);
 	s2mm_channel_status(device);
-	s2mm_bd_status(device->channels[0]);
+	s2mm_bd_status(device->channels[channel_idx]);
 
 	return 0;
 }

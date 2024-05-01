@@ -117,6 +117,7 @@ struct axi_mcdma_bd {
 */
 #define AXI_MCDMA_BD_OFFSET                         0x1000
 #define AXI_MCDMA_CH_OFFSET                         0x040
+#define AXI_MCDMA_BUF_OFFSET                        0xffff
 
 #define AXI_MCDMA_BUF_INIT_ERROR     0x01
 
