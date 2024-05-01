@@ -222,6 +222,14 @@ wire                            w_sink_fifo_r_stb;
 wire                            w_sink_fifo_empty;
 wire                            w_sink_fifo_not_empty;
 
+// Core and ref interfacing signals
+wire                            w_dtw_src_fifo_r_stb;
+wire                            w_ref_src_fifo_r_stb;
+wire                            w_dtw_src_fifo_clear;
+wire                            w_ref_src_fifo_clear;
+wire [REFMEM_PTR_WIDTH - 1:0]   dtw_addr_node;
+wire [DATA_WIDTH - 1 :0]             dtw_ref_data_node;
+
 // dtw core debug
 wire  [2:0]                     w_dtw_core_state;
 wire  [REFMEM_PTR_WIDTH-1:0]   w_dtw_core_addr_ref;
@@ -333,7 +341,11 @@ dtw_core #(
     .ref_len            (r_ref_len),
     .op_mode            (w_dtw_core_mode),
     .busy               (w_dtw_core_busy),
+
     .load_done          (w_dtw_core_load_done),
+    .ref_data           (),
+    .dtw_done           (),
+    .addr_ref           (),
 
     .src_fifo_clear     (w_src_fifo_clear),
     .src_fifo_rden      (w_src_fifo_r_stb),
@@ -356,6 +368,35 @@ dtw_core #(
 );
 
 assign dbg_ref_addr[31:REFMEM_PTR_WIDTH] = {(32-REFMEM_PTR_WIDTH){1'b0}};
+
+dtw_ref #(
+    .WIDTH              (DATA_WIDTH),   // Data width
+    .AXIS_WIDTH         (AXIS_WIDTH),   // AXI data width
+    .REF_INIT           (0),
+    .REFMEM_PTR_WIDTH   (REFMEM_PTR_WIDTH)
+) dr (
+    // Main control signals
+    .clk                (S_AXI_clk),
+    .rst                (w_dtw_core_rst),
+    .rs                 (w_dtw_core_rs),
+
+    .ref_len_in         (r_ref_len),
+    .op_mode_in         (w_dtw_core_mode),            // Reference mode: 0, query mode: 1
+    .busy_out           (),               // Idle: 0, busy_out: 1
+
+    .dtw_done_in        (),
+    .dtw_read_addr_in   (),
+    .ref_data_out       (),
+    .load_done_out      (w_dtw_core_load_done),
+
+    .src_fifo_clear_out (w_ref_src_fifo_clear),
+    .src_fifo_rden_out  (w_ref_src_fifo_r_stb),
+    .src_fifo_empty     (w_src_fifo_empty),
+    .src_fifo_data_in   (w_src_fifo_r_data),
+
+    .dbg_ref_state_out  (dbg_ref_state),
+    .dbg_addr_ref_out   (dbg_ref_addr)
+);
 
 fifo #(
     .DEPTH              (FIFO_DEPTH),
