@@ -48,7 +48,9 @@ module dtw_accel #(
     parameter FIFO_DEPTH            = 4,
     
     parameter INVERT_AXI_RESET      = 1,
-    parameter INVERT_AXIS_RESET     = 1
+    parameter INVERT_AXIS_RESET     = 1,
+
+    parameter DTW_DATA_WIDTH        = 16
 )(
     input  wire                             S_AXI_clk,
     input  wire                             S_AXI_rst,
@@ -228,7 +230,7 @@ wire                            w_ref_src_fifo_r_stb;
 wire                            w_dtw_src_fifo_clear;
 wire                            w_ref_src_fifo_clear;
 wire [REFMEM_PTR_WIDTH - 1:0]   w_dtw_ref_addr;
-wire [DATA_WIDTH - 1 :0]        w_dtw_ref_data;
+wire [DTW_DATA_WIDTH - 1 :0]    w_dtw_ref_data;
 wire                            w_dtw_ref_busy;
 wire                            w_dtw_core_done;
 
@@ -331,7 +333,7 @@ fifo #(
 
 // DTW core
 dtw_core #(
-    .WIDTH              (16),
+    .WIDTH              (DTW_DATA_WIDTH),
     .AXIS_WIDTH         (AXIS_DATA_WIDTH),
     .REF_INIT           (0),
     .REFMEM_PTR_WIDTH   (REFMEM_PTR_WIDTH)
@@ -349,8 +351,8 @@ dtw_core #(
     .dtw_done           (w_dtw_core_done),
     .addr_ref           (w_dtw_ref_addr),
 
-    .src_fifo_clear     (w_src_fifo_clear),
-    .src_fifo_rden      (w_src_fifo_r_stb),
+    .src_fifo_clear     (w_dtw_src_fifo_clear),
+    .src_fifo_rden      (w_dtw_src_fifo_r_stb),
     .src_fifo_empty     (w_src_fifo_empty),
     .src_fifo_data      (w_src_fifo_r_data),
 
@@ -370,8 +372,8 @@ dtw_core #(
 assign dbg_ref_addr[31:REFMEM_PTR_WIDTH] = {(32-REFMEM_PTR_WIDTH){1'b0}};
 
 dtw_ref #(
-    .WIDTH              (DATA_WIDTH),   // Data width
-    .AXIS_WIDTH         (AXIS_WIDTH),   // AXI data width
+    .WIDTH              (DTW_DATA_WIDTH),   // Data width
+    .AXIS_WIDTH         (AXIS_DATA_WIDTH),   // AXI data width
     .REF_INIT           (0),
     .REFMEM_PTR_WIDTH   (REFMEM_PTR_WIDTH)
 ) dr (
@@ -380,7 +382,7 @@ dtw_ref #(
     .rst                (w_dtw_core_rst),
     .rs                 (w_dtw_core_rs),
 
-    .ref_len_in         (r_ref_len),
+    .ref_len_in         (r_ref_len[REFMEM_PTR_WIDTH-1:0]),
     .op_mode_in         (w_dtw_core_mode),            // Reference mode: 0, query mode: 1
     .busy_out           (w_dtw_ref_busy),               // Idle: 0, busy_out: 1
 
@@ -392,10 +394,10 @@ dtw_ref #(
     .src_fifo_clear_out (w_ref_src_fifo_clear),
     .src_fifo_rden_out  (w_ref_src_fifo_r_stb),
     .src_fifo_empty     (w_src_fifo_empty),
-    .src_fifo_data_in   (w_src_fifo_r_data),
+    .src_fifo_data_in   (w_src_fifo_r_data[DTW_DATA_WIDTH-1:0]),
 
     .dbg_ref_state_out  (dbg_ref_state),
-    .dbg_addr_ref_out   (dbg_ref_addr)
+    .dbg_addr_ref_out   (dbg_ref_addr[REFMEM_PTR_WIDTH-1:0])
 );
 
 fifo #(
@@ -460,6 +462,12 @@ assign w_status[31:9]                   = 0;
 assign SINK_AXIS_tid [AXIS_ID_WIDTH - 1:0]                      = {AXIS_ID_WIDTH{1'b0}};
 assign SINK_AXIS_tdest [AXIS_DEST_WIDTH - 1:0]                  = {AXIS_DEST_WIDTH{1'b0}};
 assign SINK_AXIS_tkeep [AXIS_KEEP_WIDTH - 1:0]                  = {AXIS_KEEP_WIDTH{1'b1}};
+
+assign w_src_fifo_r_stb = w_dtw_src_fifo_r_stb | w_ref_src_fifo_r_stb;
+assign w_src_fifo_clear = w_dtw_src_fifo_clear | w_ref_src_fifo_clear;
+
+assign dbg_load_done = w_dtw_core_load_done;
+
 
 /* ===============================
  * synchronous logic

@@ -13,7 +13,7 @@ module dtw_ref #(
 
     input   wire [REFMEM_PTR_WIDTH-1 : 0]       ref_len_in,
     input   wire                                op_mode_in,            // Reference mode: 0, query mode: 1
-    output  wire                                 busy_out,               // Idle: 0, busy_out: 1
+    output  wire                                busy_out,               // Idle: 0, busy_out: 1
 
     // dtw core interfacing signals
     input  wire                                 dtw_done_in,
