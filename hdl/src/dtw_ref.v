@@ -28,8 +28,7 @@ module dtw_ref #(
     input   wire [WIDTH-1:0]                    src_fifo_data_in,      // Src FIFO Data
 
     // debug signals
-    output  wire [1:0]                          dbg_ref_state_out,
-    output  wire [REFMEM_PTR_WIDTH-1:0]         dbg_addr_ref_out
+    output  wire [1:0]                          dbg_ref_state_out
 );
 
 /* ===============================

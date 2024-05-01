@@ -129,11 +129,14 @@ module dtw_accel #(
     output wire                             SINK_AXIS_tuser,
     output wire                             SINK_AXIS_tvalid,
 
-    // debug
-    output wire [31:0]                      dbg_ref_addr,
-    output wire [1:0]                       dbg_ref_state,
-    output wire [2:0]                       dbg_dtw_state,
-    output wire                             dbg_load_done
+    output wire  [2:0]                      dbg_s2mm_pf_stage,
+    output wire [NUM_CORES-1:0]             dbg_sink_fifo_r_stb_out,
+    output wire [NUM_CORES-1:0]             dbg_sink_fifo_not_empty
+    // // debug
+    // output wire [31:0]                      dbg_ref_addr,
+    // output wire [1:0]                       dbg_ref_state,
+    // output wire [2:0]                       dbg_dtw_state,
+    // output wire                             dbg_load_done
 );
 
 /* ===============================
@@ -329,7 +332,7 @@ mm2s_packet_filter #(
 
     .fifo_wren_out      (w_src_fifo_w_stb),
     .fifo_full_in       (w_src_fifo_full),
-    .fifo_data_out      (w_src_fifo_w_data)
+    .fifo_data_out      ({w_src_fifo_w_data[1], w_src_fifo_w_data[0]})
 );
 
 genvar i;
@@ -429,8 +432,7 @@ dtw_ref #(
     .src_fifo_empty     (w_src_fifo_empty),
     .src_fifo_data_in   (w_src_fifo_r_data[0]),
 
-    .dbg_ref_state_out  (dbg_ref_state),
-    .dbg_addr_ref_out   (dbg_ref_addr[REFMEM_PTR_WIDTH-1:0])
+    .dbg_ref_state_out  (dbg_ref_state)
 );
 
 // sink FIFO -> AXIS sink
@@ -457,7 +459,7 @@ s2mm_packet_filter #(
     .NUM_CHANNELS           (NUM_CORES)
 ) s2mm_pf (
     .clk_in                 (SRC_AXIS_clk),
-    .rst_in                 (S_AXI_rst),
+    .rst_in                 (w_axis_rst),
 
     .SINK_AXIS_tready_in    (SINK_AXIS_tready),
     .SINK_AXIS_tdata_out    (SINK_AXIS_tdata),
@@ -467,10 +469,11 @@ s2mm_packet_filter #(
     .SINK_AXIS_tuser_out    (SINK_AXIS_tuser),
     .SINK_AXIS_tvalid_out   (SINK_AXIS_tvalid),
 
-    .fifo_data_in           (w_sink_fifo_r_data),
+    .fifo_data_in           ({w_sink_fifo_r_data[1], w_sink_fifo_r_data[0]}),
     .fifo_not_empty_in      (w_sink_fifo_not_empty),
     .fifo_last_in           (w_sink_fifo_r_last),
-    .fifo_r_stb_out         (w_sink_fifo_r_stb)
+    .fifo_r_stb_out         (w_sink_fifo_r_stb),
+    .dbg_state              (dbg_s2mm_pf_stage)
 );
 
 /* ===============================
@@ -488,7 +491,7 @@ assign w_dtw_core_rst                   = r_control[0];
 assign w_dtw_core_rs                    = r_control[1];
 assign w_dtw_core_mode                  = r_control[2];
 
-assign w_status[0]                      = |w_dtw_core_busy;
+assign w_status[0]                      = w_dtw_core_busy[0];
 assign w_status[1]                      = w_dtw_core_load_done;
 assign w_status[2]                      = w_src_fifo_empty;
 assign w_status[3]                      = w_src_fifo_full;
@@ -505,8 +508,9 @@ assign SINK_AXIS_tid [AXIS_ID_WIDTH - 1:0]                      = {AXIS_ID_WIDTH
 assign w_src_fifo_r_stb = w_dtw_src_fifo_r_stb | w_ref_src_fifo_r_stb;
 assign w_src_fifo_clear = w_dtw_src_fifo_clear | w_ref_src_fifo_clear;
 
-assign dbg_load_done = w_dtw_core_load_done;
-
+// assign dbg_load_done = w_dtw_core_load_done;
+assign dbg_sink_fifo_not_empty = w_sink_fifo_not_empty;
+assign dbg_sink_fifo_r_stb_out = w_sink_fifo_r_stb;
 
 /* ===============================
  * synchronous logic
