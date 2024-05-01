@@ -79,11 +79,16 @@ localparam
 
 // FSM states
 localparam [2:0] // n states
-    IDLE = 0,
-    REF_LOAD = 1,
+    DTW_IDLE = 0,
+    DTW_REF_LOAD = 1,
     DTW_Q_INIT = 2,
     DTW_Q_RUN = 3,
     DTW_Q_DONE = 4;
+
+localparam [1:0]
+    REF_IDLE = 0,
+    REF_LOAD = 1,
+    REF_DTW_READ = 2;
 
 /* ===============================
  * registers/wires
@@ -105,7 +110,8 @@ wire [WIDTH-1:0]    curr_minval;        // Current minimum value
 wire [31:0]         curr_position;      // Current best match position
 
 // FSM state
-reg [2:0] r_state;
+reg [2:0] dtw_state;
+reg [1:0] ref_state;
 
 // Others
 reg [1:0] stall_counter;
@@ -152,7 +158,7 @@ dtw_core_datapath #(
  * =============================== */
 assign load_done = r_load_done;
 assign src_fifo_clear = r_src_fifo_clear;
-assign dbg_state = r_state;
+assign dbg_state = dtw_state;
 assign dbg_addr_ref = addr_ref;
 assign dbg_nquery = r_dbg_nquery;
 assign dbg_curr_qid = curr_qid;
@@ -161,53 +167,85 @@ assign dbg_curr_qid = curr_qid;
  * synchronous logic
  * =============================== */
 // FSM State change
+
+// Reference Load FSM
 always @(posedge clk) begin
     if (rst) begin
-        r_state <= IDLE;
+        ref_state <= REF_IDLE;
+    end else begin
+        case (ref_state)
+        REF_IDLE: begin
+            
+        end
+
+        REF_LOAD: begin
+            
+        end
+
+        REF_DTW_READ: begin
+            
+        end
+
+        default: begin
+            
+        end
+        endcase
+    end
+
+end
+
+// DTW Core FSM
+always @(posedge clk) begin
+    if (rst) begin
+        dtw_state <= DTW_IDLE;
         r_load_done <= 0;
     end else begin
-        case (r_state)
-        IDLE: begin
+        case (dtw_state)
+        DTW_IDLE: begin
             if (rs) begin
                 if (op_mode == MODE_NORMAL && r_load_done == 1) begin
-                    r_state <= DTW_Q_INIT;
+                    dtw_state <= DTW_Q_INIT;
                 end else if (op_mode == MODE_LOAD_REF && r_load_done == 0) begin
-                    r_state <= REF_LOAD;
+                    dtw_state <= DTW_REF_LOAD;
                 end else begin
-                    r_state <= IDLE;
+                    dtw_state <= DTW_IDLE;
                 end
             end else begin
-                r_state <= IDLE;
+                dtw_state <= DTW_IDLE;
             end
         end
-        REF_LOAD: begin
+        DTW_REF_LOAD: begin
             if (addr_ref < ref_len) begin
-                r_state <= REF_LOAD;
+                dtw_state <= DTW_REF_LOAD;
             end else begin
                 r_load_done <= 1;
-                r_state <= IDLE;
+                dtw_state <= DTW_IDLE;
             end
         end
         DTW_Q_INIT: begin
             if (!src_fifo_empty) begin
-                r_state <= DTW_Q_RUN;
+                dtw_state <= DTW_Q_RUN;
             end else begin
-                r_state <= DTW_Q_INIT;
+                dtw_state <= DTW_Q_INIT;
             end
         end
         DTW_Q_RUN: begin
             if (!dp_done) begin
-                r_state <= DTW_Q_RUN;
+                dtw_state <= DTW_Q_RUN;
             end else begin
-                r_state <= DTW_Q_DONE;
+                dtw_state <= DTW_Q_DONE;
             end
         end
         DTW_Q_DONE: begin
             if (sink_fifo_full || stall_counter < 2'h3) begin
-                r_state <= DTW_Q_DONE;
+                dtw_state <= DTW_Q_DONE;
             end else begin
-                r_state <= IDLE;
+                dtw_state <= DTW_IDLE;
             end
+        end
+
+        default: begin
+            dtw_state <= DTW_IDLE;
         end
         endcase
     end
@@ -215,8 +253,8 @@ end
 
 // FSM output
 always @(posedge clk) begin
-    case (r_state)
-    IDLE: begin
+    case (dtw_state)
+    DTW_IDLE: begin
         busy                <= 0;
         src_fifo_rden       <= 0;
         sink_fifo_wren      <= 0;
@@ -229,7 +267,7 @@ always @(posedge clk) begin
         sink_fifo_last      <= 0;
         curr_qid            <= 0;
     end
-    REF_LOAD: begin
+    DTW_REF_LOAD: begin
         busy                <= 1;
         src_fifo_rden       <= 1;
         sink_fifo_wren      <= 0;
