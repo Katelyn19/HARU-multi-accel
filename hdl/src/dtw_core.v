@@ -63,14 +63,7 @@ module dtw_core #(
     output  reg                     sink_fifo_wren,     // Sink FIFO Write enable
     input   wire                    sink_fifo_full,     // Sink FIFO Full
     output  reg [31:0]              sink_fifo_data,     // Sink FIFO Data
-    output  reg                     sink_fifo_last,     // Sink FIFO Last
-
-    // debug signals
-    output  wire [2:0]                              dbg_dtw_state,
-
-    output  wire [31:0]             dbg_cycle_counter,
-    output  wire [31:0]             dbg_nquery,
-    output  wire [31:0]             dbg_curr_qid
+    output  reg                     sink_fifo_last      // Sink FIFO Last
 );
 
 /* ===============================
