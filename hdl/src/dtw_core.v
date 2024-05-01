@@ -55,7 +55,7 @@ module dtw_core #(
 
     // Src FIFO signals
     output  wire                    src_fifo_clear,     // Src FIFO Clear signal
-    output  reg                     src_fifo_rden,      // Src FIFO Read enable
+    output  wire                    src_fifo_rden,      // Src FIFO Read enable
     input   wire                    src_fifo_empty,     // Src FIFO Empty
     input   wire [31:0]             src_fifo_data,      // Src FIFO Data
 
@@ -67,7 +67,6 @@ module dtw_core #(
 
     // debug signals
     output  wire [2:0]                              dbg_dtw_state,
-    output  wire [REFMEM_PTR_WIDTH-1:0]             dbg_addr_ref,
 
     output  wire [31:0]             dbg_cycle_counter,
     output  wire [31:0]             dbg_nquery,
@@ -100,6 +99,14 @@ wire                dp_done;            // dp core done
 reg  [31:0]         curr_qid;           // Current query id
 wire [WIDTH-1:0]    curr_minval;        // Current minimum value
 wire [31:0]         curr_position;      // Current best match position
+
+// Ref signals
+reg [REFMEM_PTR_WIDTH-1:0] addr_ref_reg;
+reg dtw_done_reg;
+
+// src fifo signals
+reg src_fifo_clear_reg;
+reg src_fifo_rden_reg;
 
 // FSM state
 reg [2:0] dtw_state;
@@ -134,10 +141,14 @@ dtw_core_datapath #(
  * asynchronous logic
  * =============================== */
 // assign src_fifo_clear = src_fifo_clear;
+assign addr_ref = addr_ref_reg;
+assign src_fifo_clear = src_fifo_clear_reg;
+assign src_fifo_rden = src_fifo_rden_reg;
+assign dtw_done = dtw_done_reg;
 
 // debug
 assign dbg_dtw_state = dtw_state;
-assign dbg_addr_ref = addr_ref;
+assign dbg_addr_ref = addr_ref_reg;
 assign dbg_nquery = r_dbg_nquery;
 assign dbg_curr_qid = curr_qid;
 
@@ -204,45 +215,45 @@ always @(posedge clk) begin
     case (dtw_state)
     DTW_IDLE: begin
         busy                <= 0;
-        src_fifo_rden   <= 0;
+        src_fifo_rden_reg   <= 0;
         sink_fifo_wren      <= 0;
-        addr_ref        <= 0;
+        addr_ref_reg        <= 0;
         dp_rst              <= 1;
         dp_running          <= 0;
         stall_counter       <= 0;
-        src_fifo_clear  <= 1;
+        src_fifo_clear_reg  <= 1;
         sink_fifo_last      <= 0;
         curr_qid            <= 0;
-        dtw_done          <= 0;
+        dtw_done_reg          <= 0;
     end
     DTW_REF_LOAD: begin
         // same as idle
-        src_fifo_rden   <= 0;
+        src_fifo_rden_reg   <= 0;
         sink_fifo_wren      <= 0;
-        addr_ref        <= 0;
+        addr_ref_reg        <= 0;
         stall_counter       <= 0;
         sink_fifo_last      <= 0;
         curr_qid            <= 0;
         dp_rst              <= 1;
         dp_running          <= 0;
-        dtw_done          <= 0;
+        dtw_done_reg          <= 0;
 
         // unique to this state
         busy                <= 1;
-        src_fifo_clear  <= 0;
+        src_fifo_clear_reg  <= 0;
     end
     DTW_Q_INIT: begin
         // same as idle
         sink_fifo_wren      <= 0;
-        addr_ref        <= 0;
+        addr_ref_reg        <= 0;
         stall_counter       <= 0;
         sink_fifo_last      <= 0;
-        dtw_done          <= 0;
+        dtw_done_reg          <= 0;
 
         // unique to this state
         busy                <= 1;
-        src_fifo_rden   <= 1;
-        src_fifo_clear  <= 0;
+        src_fifo_rden_reg   <= 1;
+        src_fifo_clear_reg  <= 0;
         dp_rst              <= 0;
 
         if (!src_fifo_empty) begin
@@ -256,36 +267,36 @@ always @(posedge clk) begin
         // same as idle
         sink_fifo_wren          <= 0;
         stall_counter           <= 0;
-        src_fifo_clear      <= 0;
-        dtw_done              <= 0;
+        src_fifo_clear_reg      <= 0;
+        dtw_done_reg              <= 0;
 
         // unique to this state
         busy                    <= 1;
         dp_rst                  <= 0;
 
-        if (addr_ref < SQG_SIZE) begin
+        if (addr_ref_reg < SQG_SIZE) begin
             // Query loading
             if (!src_fifo_empty) begin
-                addr_ref       <= addr_ref + 1;
-                src_fifo_rden   <= 1;
+                addr_ref_reg       <= addr_ref_reg + 1;
+                src_fifo_rden_reg   <= 1;
                 dp_running      <= 1;
             end else begin
-                src_fifo_rden   <= 0;
+                src_fifo_rden_reg   <= 0;
                 dp_running      <= 0;
             end
         end else begin
             // Query loaded
-            addr_ref           <= addr_ref + 1;
-            src_fifo_rden       <= 0;
+            addr_ref_reg           <= addr_ref_reg + 1;
+            src_fifo_rden_reg       <= 0;
             dp_running          <= 1;
         end
     end
     DTW_Q_DONE: begin
         busy                <= 1;
-        src_fifo_rden   <= 0;
+        src_fifo_rden_reg   <= 0;
         dp_rst              <= 0;
         dp_running          <= 0;
-        dtw_done          <= 1;
+        dtw_done_reg          <= 1;
 
         // Serialize output
         if (!sink_fifo_full) begin

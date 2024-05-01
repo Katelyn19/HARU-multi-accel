@@ -362,7 +362,6 @@ dtw_core #(
     .sink_fifo_last     (w_sink_fifo_r_last),
 
     .dbg_dtw_state      (dbg_dtw_state),
-    .dbg_addr_ref       (dbg_ref_addr[REFMEM_PTR_WIDTH-1:0]),
 
     .dbg_cycle_counter  (w_dtw_core_cycle_counter),
     .dbg_nquery         (w_dtw_core_nquery),
