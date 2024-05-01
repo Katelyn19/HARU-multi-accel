@@ -19,7 +19,7 @@ module s2mm_packet_filter #(
     output wire                             SINK_AXIS_tvalid_out,
 
     // FIFO Peripherals
-    input  wire [FIFO_DATA_WIDTH - 1: 0]    fifo_data_in,
+    input  wire [(FIFO_DATA_WIDTH*NUM_CHANNELS) - 1: 0]    fifo_data_in,
     input  wire [NUM_CHANNELS-1:0]          fifo_not_empty_in,
     input  wire [NUM_CHANNELS-1:0]          fifo_last_in,
     output wire [NUM_CHANNELS-1:0]          fifo_r_stb_out
@@ -49,7 +49,7 @@ assign SINK_AXIS_tvalid_out = ^channel_en;
 always @(*) begin
     tdata_buf = {AXIS_DATA_WIDTH{1'b0}};
     for (integer i = 0; i < NUM_CHANNELS; i = i + 1) begin
-        tdata_buf[AXIS_DATA_WIDTH-1:0] = (channel_en[i]) ? fifo_data_in[i] : tdata_buf[AXIS_DATA_WIDTH-1:0];
+        tdata_buf[AXIS_DATA_WIDTH-1:0] = (channel_en[i]) ? fifo_data_in[i*FIFO_DATA_WIDTH+:FIFO_DATA_WIDTH] : tdata_buf[AXIS_DATA_WIDTH-1:0];
     end
 end
 assign SINK_AXIS_tdata_out = tdata_buf;

@@ -50,7 +50,9 @@ module dtw_accel #(
     parameter INVERT_AXI_RESET      = 1,
     parameter INVERT_AXIS_RESET     = 1,
 
-    parameter DTW_DATA_WIDTH        = 16
+    parameter DTW_DATA_WIDTH        = 16,
+
+    parameter NUM_CORES             = 2
 )(
     input  wire                             S_AXI_clk,
     input  wire                             S_AXI_rst,
@@ -435,19 +437,43 @@ fifo #(
 );
 
 // sink FIFO -> AXIS sink
-fifo_2_axis_adapter #(
-    .AXIS_DATA_WIDTH    (AXIS_DATA_WIDTH)
-)f2aa(
-    .o_fifo_r_stb       (w_sink_fifo_r_stb),
-    .i_fifo_data        (w_sink_fifo_r_data),
-    .i_fifo_not_empty   (w_sink_fifo_not_empty),
-    .i_fifo_last        (w_sink_fifo_r_last),
+// fifo_2_axis_adapter #(
+//     .AXIS_DATA_WIDTH    (AXIS_DATA_WIDTH)
+// )f2aa(
+//     .o_fifo_r_stb       (w_sink_fifo_r_stb),
+//     .i_fifo_data        (w_sink_fifo_r_data),
+//     .i_fifo_not_empty   (w_sink_fifo_not_empty),
+//     .i_fifo_last        (w_sink_fifo_r_last),
 
-    .o_axis_tuser       (SINK_AXIS_tuser),
-    .o_axis_tdata       (SINK_AXIS_tdata),
-    .o_axis_tvalid      (SINK_AXIS_tvalid),
-    .i_axis_tready      (SINK_AXIS_tready),
-    .o_axis_tlast       (SINK_AXIS_tlast)
+//     .o_axis_tuser       (SINK_AXIS_tuser),
+//     .o_axis_tdata       (SINK_AXIS_tdata),
+//     .o_axis_tvalid      (SINK_AXIS_tvalid),
+//     .i_axis_tready      (SINK_AXIS_tready),
+//     .o_axis_tlast       (SINK_AXIS_tlast)
+// );
+
+s2mm_packet_filter #(
+    .AXIS_DATA_WIDTH        (AXIS_DATA_WIDTH),
+    .FIFO_DATA_WIDTH        (FIFO_DATA_WIDTH),
+    .AXIS_KEEP_WIDTH        (AXIS_KEEP_WIDTH),
+    .AXIS_DEST_WIDTH        (AXIS_DEST_WIDTH),
+    .NUM_CHANNELS           (1)
+) s2mm_pf (
+    .clk_in                 (SRC_AXIS_clk),
+    .rst_in                 (S_AXI_rst),
+
+    .SINK_AXIS_tready_in    (SINK_AXIS_tready),
+    .SINK_AXIS_tdata_out    (SINK_AXIS_tdata),
+    .SINK_AXIS_tdest_out    (SINK_AXIS_tdest),
+    .SINK_AXIS_tkeep_out    (SINK_AXIS_tkeep),
+    .SINK_AXIS_tlast_out    (SINK_AXIS_tlast),
+    .SINK_AXIS_tuser_out    (SINK_AXIS_tuser),
+    .SINK_AXIS_tvalid_out   (SINK_AXIS_tvalid),
+
+    .fifo_data_in           (w_sink_fifo_r_data),
+    .fifo_not_empty_in      (w_sink_fifo_not_empty),
+    .fifo_last_in           (w_sink_fifo_r_last),
+    .fifo_r_stb_out         (w_sink_fifo_r_stb)
 );
 
 /* ===============================
@@ -476,8 +502,8 @@ assign w_status[8:6]                    = w_dtw_core_state;
 // assign w_status[31:24]                  = w_dtw_core_addrR_ref[7:0];
 assign w_status[31:9]                   = 0;
 assign SINK_AXIS_tid [AXIS_ID_WIDTH - 1:0]                      = {AXIS_ID_WIDTH{1'b0}};
-assign SINK_AXIS_tdest [AXIS_DEST_WIDTH - 1:0]                  = {AXIS_DEST_WIDTH{1'b0}};
-assign SINK_AXIS_tkeep [AXIS_KEEP_WIDTH - 1:0]                  = {AXIS_KEEP_WIDTH{1'b1}};
+// assign SINK_AXIS_tdest [AXIS_DEST_WIDTH - 1:0]                  = {AXIS_DEST_WIDTH{1'b0}};
+// assign SINK_AXIS_tkeep [AXIS_KEEP_WIDTH - 1:0]                  = {AXIS_KEEP_WIDTH{1'b1}};
 
 assign w_src_fifo_r_stb = w_dtw_src_fifo_r_stb | w_ref_src_fifo_r_stb;
 assign w_src_fifo_clear = w_dtw_src_fifo_clear | w_ref_src_fifo_clear;
