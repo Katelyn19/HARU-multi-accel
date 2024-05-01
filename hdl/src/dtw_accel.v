@@ -123,7 +123,13 @@ module dtw_accel #(
     output wire                             SINK_AXIS_tlast,
     input  wire                             SINK_AXIS_tready,
     output wire                             SINK_AXIS_tuser,
-    output wire                             SINK_AXIS_tvalid
+    output wire                             SINK_AXIS_tvalid,
+
+    // debug
+    output wire [31:0]                      dbg_ref_addr,
+    output wire [1:0]                       dbg_ref_state,
+    output wire [2:0]                       dbg_dtw_state,
+    output wire                             dbg_load_done
 );
 
 /* ===============================
@@ -339,13 +345,17 @@ dtw_core #(
     .sink_fifo_data     (w_sink_fifo_w_data),
     .sink_fifo_last     (w_sink_fifo_r_last),
 
-    .dbg_state          (w_dtw_core_state),
-    .dbg_addr_ref       (w_dtw_core_addr_ref),
+    .dbg_dtw_state      (dbg_dtw_state),
+    .dbg_ref_state      (dbg_ref_state),
+    .dbg_load_done      (dbg_load_done),
+    .dbg_addr_ref       (dbg_ref_addr[REFMEM_PTR_WIDTH-1:0]),
 
     .dbg_cycle_counter  (w_dtw_core_cycle_counter),
     .dbg_nquery         (w_dtw_core_nquery),
     .dbg_curr_qid       (w_dtw_core_curr_qid)
 );
+
+assign dbg_ref_addr[31:REFMEM_PTR_WIDTH] = {(32-REFMEM_PTR_WIDTH){1'b0}};
 
 fifo #(
     .DEPTH              (FIFO_DEPTH),

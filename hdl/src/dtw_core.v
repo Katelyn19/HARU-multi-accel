@@ -61,7 +61,9 @@ module dtw_core #(
     output  reg                     sink_fifo_last,     // Sink FIFO Last
 
     // debug signals
-    output  wire [2:0]              dbg_state,
+    output  wire [2:0]                              dbg_dtw_state,
+    output  wire [1:0]                              dbg_ref_state,
+    output  wire                                    dbg_load_done,
     output  wire [REFMEM_PTR_WIDTH-1:0]             dbg_addr_ref,
 
     output  wire [31:0]             dbg_cycle_counter,
@@ -94,10 +96,20 @@ localparam [1:0]
  * registers/wires
  * =============================== */
 reg r_load_done;
-reg r_src_fifo_clear;
+reg r_dtw_done;
+
+// Shared with ref load signals //TODO: Remove once ref is externalised
+reg dtw_src_fifo_rden;
+reg ref_src_fifo_rden;
+reg dtw_src_fifo_clear;
+reg ref_src_fifo_clear;
+reg [REFMEM_PTR_WIDTH-1:0] dtw_addr_ref;
+reg [REFMEM_PTR_WIDTH-1:0] ref_addr_load;
+wire [REFMEM_PTR_WIDTH-1:0] addr_node;
+reg dtw_read_addr_mode;
 
 // Ref mem signals
-reg  [REFMEM_PTR_WIDTH-1:0] addr_ref;          // Read address for refmem 
+// reg  [REFMEM_PTR_WIDTH-1:0] addr_ref;          // Read address for refmem 
 reg                 wren_ref;           // Write enable for refmem
 wire [WIDTH-1:0]    dataout_ref;        // Reference data
 
@@ -129,7 +141,7 @@ dtw_core_ref_mem #(
     .clk            (clk),
 
     .wen          (wren_ref),
-    .addr         (addr_ref[REFMEM_PTR_WIDTH-1:0]),
+    .addr         (addr_node[REFMEM_PTR_WIDTH-1:0]),
     .din          (src_fifo_data[15:0]),
     .dout         (dataout_ref)
 );
@@ -157,11 +169,23 @@ dtw_core_datapath #(
  * asynchronous logic
  * =============================== */
 assign load_done = r_load_done;
-assign src_fifo_clear = r_src_fifo_clear;
-assign dbg_state = dtw_state;
-assign dbg_addr_ref = addr_ref;
+// assign src_fifo_clear = dtw_src_fifo_clear;
+
+// debug
+assign dbg_dtw_state = dtw_state;
+assign dbg_ref_state = ref_state;
+assign dbg_load_done = r_load_done;
+assign dbg_addr_ref = addr_node;
 assign dbg_nquery = r_dbg_nquery;
 assign dbg_curr_qid = curr_qid;
+
+// Shared dtw and ref load ports TODO: remove this once ref is externalised
+assign src_fifo_clear = dtw_src_fifo_clear | ref_src_fifo_clear;
+assign addr_node = (dtw_read_addr_mode) ? dtw_addr_ref : ref_addr_load;
+
+always @(*) begin
+    src_fifo_rden = dtw_src_fifo_rden | ref_src_fifo_rden;
+end
 
 /* ===============================
  * synchronous logic
@@ -175,19 +199,37 @@ always @(posedge clk) begin
     end else begin
         case (ref_state)
         REF_IDLE: begin
-            
+            if (rs) begin
+                if (op_mode == MODE_NORMAL && r_load_done == 1) begin
+                    ref_state <= REF_DTW_READ;
+                end else if (op_mode == MODE_LOAD_REF && r_load_done == 0) begin
+                    ref_state <= REF_LOAD;
+                end else begin
+                    ref_state <= REF_IDLE;
+                end
+            end else begin
+                ref_state <= REF_IDLE;
+            end
         end
 
         REF_LOAD: begin
-            
+            if (ref_addr_load[REFMEM_PTR_WIDTH-1:0] < ref_len[REFMEM_PTR_WIDTH-1:0]) begin
+                ref_state <= REF_LOAD;
+            end else begin
+                ref_state <= REF_IDLE;
+            end
         end
 
         REF_DTW_READ: begin
-            
+            if (r_dtw_done) begin
+                ref_state <= REF_IDLE;
+            end else begin
+                ref_state <= REF_DTW_READ;
+            end
         end
 
         default: begin
-            
+            ref_state <= REF_IDLE;
         end
         endcase
     end
@@ -198,7 +240,6 @@ end
 always @(posedge clk) begin
     if (rst) begin
         dtw_state <= DTW_IDLE;
-        r_load_done <= 0;
     end else begin
         case (dtw_state)
         DTW_IDLE: begin
@@ -215,10 +256,9 @@ always @(posedge clk) begin
             end
         end
         DTW_REF_LOAD: begin
-            if (addr_ref < ref_len) begin
+            if (r_load_done == 0) begin
                 dtw_state <= DTW_REF_LOAD;
             end else begin
-                r_load_done <= 1;
                 dtw_state <= DTW_IDLE;
             end
         end
@@ -251,47 +291,51 @@ always @(posedge clk) begin
     end
 end
 
-// FSM output
+// DTW FSM output
 always @(posedge clk) begin
     case (dtw_state)
     DTW_IDLE: begin
         busy                <= 0;
-        src_fifo_rden       <= 0;
+        dtw_src_fifo_rden   <= 0;
         sink_fifo_wren      <= 0;
-        addr_ref           <= 0;
+        dtw_addr_ref        <= 0;
         dp_rst              <= 1;
         dp_running          <= 0;
         stall_counter       <= 0;
-        wren_ref            <= 0;
-        r_src_fifo_clear    <= 1;
+        dtw_src_fifo_clear  <= 1;
         sink_fifo_last      <= 0;
         curr_qid            <= 0;
+        r_dtw_done          <= 0;
     end
     DTW_REF_LOAD: begin
-        busy                <= 1;
-        src_fifo_rden       <= 1;
+        // same as idle
+        dtw_src_fifo_rden   <= 0;
         sink_fifo_wren      <= 0;
+        dtw_addr_ref        <= 0;
+        stall_counter       <= 0;
+        sink_fifo_last      <= 0;
+        curr_qid            <= 0;
         dp_rst              <= 1;
         dp_running          <= 0;
-        stall_counter       <= 0;
-        r_src_fifo_clear    <= 0;
-        r_dbg_nquery        <= 0;
+        r_dtw_done          <= 0;
 
-        if (!src_fifo_empty && src_fifo_rden) begin
-            addr_ref        <= addr_ref + 1;
-            wren_ref        <= 1;
-        end else begin
-            wren_ref        <= 0;
-        end
+        // unique to this state
+        busy                <= 1;
+        dtw_src_fifo_clear  <= 0;
     end
     DTW_Q_INIT: begin
-        busy                <= 1;
-        src_fifo_rden       <= 1;
+        // same as idle
         sink_fifo_wren      <= 0;
-        dp_rst              <= 0;
+        dtw_addr_ref        <= 0;
         stall_counter       <= 0;
-        r_src_fifo_clear    <= 0;
-        wren_ref            <= 0;
+        sink_fifo_last      <= 0;
+        r_dtw_done          <= 0;
+
+        // unique to this state
+        busy                <= 1;
+        dtw_src_fifo_rden   <= 1;
+        dtw_src_fifo_clear  <= 0;
+        dp_rst              <= 0;
 
         if (!src_fifo_empty) begin
             curr_qid        <= src_fifo_data;
@@ -301,36 +345,39 @@ always @(posedge clk) begin
         end
     end
     DTW_Q_RUN: begin
-        busy                    <= 1;
+        // same as idle
         sink_fifo_wren          <= 0;
-        dp_rst                  <= 0;
         stall_counter           <= 0;
-        r_src_fifo_clear        <= 0;
-        wren_ref            <= 0;
+        dtw_src_fifo_clear      <= 0;
+        r_dtw_done              <= 0;
 
-        if (addr_ref < SQG_SIZE) begin
+        // unique to this state
+        busy                    <= 1;
+        dp_rst                  <= 0;
+
+        if (dtw_addr_ref < SQG_SIZE) begin
             // Query loading
             if (!src_fifo_empty) begin
-                addr_ref       <= addr_ref + 1;
-                src_fifo_rden   <= 1;
+                dtw_addr_ref       <= dtw_addr_ref + 1;
+                dtw_src_fifo_rden   <= 1;
                 dp_running      <= 1;
             end else begin
-                src_fifo_rden   <= 0;
+                dtw_src_fifo_rden   <= 0;
                 dp_running      <= 0;
             end
         end else begin
             // Query loaded
-            addr_ref           <= addr_ref + 1;
-            src_fifo_rden       <= 0;
+            dtw_addr_ref           <= dtw_addr_ref + 1;
+            dtw_src_fifo_rden       <= 0;
             dp_running          <= 1;
         end
     end
     DTW_Q_DONE: begin
-        busy            <= 1;
-        src_fifo_rden   <= 0;
-        dp_rst          <= 0;
-        dp_running      <= 0;
-        wren_ref        <= 0;
+        busy                <= 1;
+        dtw_src_fifo_rden   <= 0;
+        dp_rst              <= 0;
+        dp_running          <= 0;
+        r_dtw_done          <= 1;
 
         // Serialize output
         if (!sink_fifo_full) begin
@@ -359,4 +406,98 @@ always @(posedge clk) begin
     endcase
 end
 
+// Reference Load FSM Outputs
+always @(posedge clk) begin
+    case (ref_state)
+    REF_IDLE: begin
+        ref_src_fifo_rden   <= 0;
+        ref_addr_load       <= 0;
+        wren_ref            <= 0;
+        ref_src_fifo_clear  <= 1;
+    end
+
+    REF_LOAD: begin
+        ref_src_fifo_rden   <= 1;
+        ref_src_fifo_clear  <= 0;
+
+        // When the output data from the fifo is valid
+        if (!src_fifo_empty && ref_src_fifo_rden) begin
+            ref_addr_load   <= ref_addr_load + 1; // next address to read from
+            wren_ref        <= 1;
+        end else begin
+            wren_ref        <= 0;
+        end
+    end
+
+    REF_DTW_READ: begin
+        ref_src_fifo_rden   <= 0;
+        wren_ref            <= 0;
+        ref_src_fifo_clear  <= 0;
+        ref_addr_load       <= 0;
+
+    end
+
+    default: begin
+        ref_src_fifo_rden   <= 0;
+        ref_addr_load       <= 0;
+        wren_ref            <= 0;
+        ref_src_fifo_clear  <= 0;
+    end
+    endcase
+end
+
+// Ref Load FSM Output
+always @(posedge clk) begin
+    if (rst) begin
+        r_load_done <= 1'b0;
+    end else begin
+        case(ref_state)
+            REF_LOAD: begin
+                if (ref_addr_load[REFMEM_PTR_WIDTH-1:0] < ref_len[REFMEM_PTR_WIDTH-1:0]) begin
+                    r_load_done <= 1'b0;
+                end else begin
+                    r_load_done <= 1'b1;
+                end
+            end
+
+            default: begin
+                r_load_done <= r_load_done;
+            end
+        endcase
+    end
+end
+
+// addr mode FSM output
+always @(posedge clk) begin
+    if (rst) begin
+        dtw_read_addr_mode  <= 1;
+    end else begin
+        case(ref_state)
+            REF_IDLE: begin
+                if (op_mode == MODE_NORMAL && r_load_done == 1) begin
+                    dtw_read_addr_mode <= 1'b1;
+                end else begin
+                    dtw_read_addr_mode <= 1'b0;
+                end
+            end
+
+            REF_LOAD: begin
+                if (ref_addr_load[REFMEM_PTR_WIDTH-1:0] < ref_len[REFMEM_PTR_WIDTH-1:0]) begin
+                    dtw_read_addr_mode <= 1'b0;
+                end else begin
+                    dtw_read_addr_mode <= 1'b1;
+                end
+            end
+
+            REF_DTW_READ: begin
+                dtw_read_addr_mode <= 1'b1;
+            end
+
+            default: begin
+                dtw_read_addr_mode <= 1'b0;
+            end
+        endcase
+    end
+
+end
 endmodule
